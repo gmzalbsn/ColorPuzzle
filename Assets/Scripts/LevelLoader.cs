@@ -71,7 +71,6 @@ public class LevelLoader : MonoBehaviour
         {
             string jsonText = levelTextAsset.text;
             currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
-            Debug.Log($"Level {currentLevelData.levelId} yüklendi, süre limiti: {currentLevelData.timeLimit}");
             CreateBoards();
         }
         else

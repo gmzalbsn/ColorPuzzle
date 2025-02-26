@@ -20,7 +20,6 @@ public class Block : MonoBehaviour
     private void Start()
     {
         originalPosition=transform.localPosition;
-        Debug.Log(originalPosition);
     }
 
     public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)

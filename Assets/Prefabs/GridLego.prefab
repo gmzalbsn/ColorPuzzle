@@ -206,8 +206,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   meshRenderer: {fileID: 2345091430873021030}
-  normalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  normalColor: {r: 0.5377358, g: 0.5377358, b: 0.5377358, a: 1}
+  highlightColor: {r: 0.38679248, g: 0.38679248, b: 0.38679248, a: 1}
 --- !u!65 &7593374163380047966
 BoxCollider:
   m_ObjectHideFlags: 0

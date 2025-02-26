@@ -8,16 +8,30 @@ public class BlockManager : MonoBehaviour
     [SerializeField] private Material[] colorMaterials;
     
     private Dictionary<string, Block> blocks = new Dictionary<string, Block>();
-    private GridManager currentGridManager;
     public void CreateBlocksForBoard(GridManager gridManager, BoardData boardData)
     {
-        currentGridManager = gridManager;
-        ClearBlocks();
+        Transform boardBlocksParent = new GameObject($"Blocks_{boardData.id}").transform;
+        boardBlocksParent.SetParent(gridManager.transform);
+        
         foreach (BlockData blockData in boardData.blocks)
         {
             Material colorMaterial = FindColorMaterial(blockData.color);
-            CreateBlock(blockData, gridManager, colorMaterial);
+            if (colorMaterial != null)
+            {
+                CreateBlock(blockData, gridManager, colorMaterial, boardBlocksParent);
+            }
         }
+    } 
+    private void CreateBlock(BlockData blockData, GridManager gridManager, Material colorMaterial, Transform parent)
+    {
+        GameObject blockObj = Instantiate(blockPrefab, Vector3.zero, Quaternion.identity, parent);
+        blockObj.name = $"{parent.name}_{blockData.id}";
+        Block block = blockObj.GetComponent<Block>();
+        if (block == null)
+            block = blockObj.AddComponent<Block>();
+        block.Initialize(blockData, gridManager, colorMaterial);
+        string uniqueKey = $"{parent.name}_{blockData.id}";
+        blocks[uniqueKey] = block;
     }
     private Material FindColorMaterial(string colorName)
     {
@@ -29,27 +43,5 @@ public class BlockManager : MonoBehaviour
             }
         }
         return null;
-    }
-    private void ClearBlocks()
-    {
-        blocks.Clear();
-        
-        if (blocksParent != null)
-        {
-            foreach (Transform child in blocksParent)
-            {
-                Destroy(child.gameObject);
-            }
-        }
-    }
-    private void CreateBlock(BlockData blockData, GridManager gridManager, Material colorMaterial)
-    {
-        GameObject blockObj = Instantiate(blockPrefab, Vector3.zero, Quaternion.identity, blocksParent);
-        blockObj.name = $"Block_{blockData.id}";
-        Block block = blockObj.GetComponent<Block>();
-        if (block == null)
-            block = blockObj.AddComponent<Block>();
-        block.Initialize(blockData, gridManager, colorMaterial);
-        blocks[blockData.id] = block;
     }
 }
