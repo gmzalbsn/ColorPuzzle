@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -12,8 +13,16 @@ public class Block : MonoBehaviour
     private List<GameObject> blockParts = new List<GameObject>();
     private List<Vector2Int> gridPositions = new List<Vector2Int>();
     private Vector3 dragOffset;
-    private Vector3 originalPosition;
+    public Vector3 originalPosition;
     private bool isDragging = false;
+    private float orginalZOffset=0.005f;
+
+    private void Start()
+    {
+        originalPosition=transform.localPosition;
+        Debug.Log(originalPosition);
+    }
+
     public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
     {
         blockId = data.id;
@@ -36,6 +45,9 @@ public class Block : MonoBehaviour
             part.transform.rotation = Quaternion.Euler(-90, 0, 0);
         }
         RecalculatePosition();
+        Vector3 pos = transform.position;
+        pos.z -= orginalZOffset;
+        transform.position = pos;
     }
     private void RecalculatePosition()
     {
@@ -46,13 +58,14 @@ public class Block : MonoBehaviour
             center += part.transform.position;
         }
         center /= blockParts.Count;
+        center.z -= orginalZOffset; 
+    
         transform.position = center;
         foreach (GameObject part in blockParts)
         {
             part.transform.position -= center;
             part.transform.parent = transform;
         }
-        originalPosition = transform.position;
     }
     public string GetColor()
     {
@@ -78,11 +91,13 @@ public class Block : MonoBehaviour
     public void EndDragSimple(Vector3 finalPosition)
     {
         if (!isDragging || isFixed) return;
-    
+
         isDragging = false;
+        finalPosition.z = originalPosition.z - orginalZOffset;
+
         transform.position = finalPosition;
-        RecalculatePosition();
     }
+
     public List<Vector2Int> GetOccupiedGridPositions()
     {
         return new List<Vector2Int>(gridPositions);
@@ -91,7 +106,7 @@ public class Block : MonoBehaviour
     {
         if (!highlighted)
         {
-            Collider[] allGridCells = Physics.OverlapSphere(transform.position, 10f);
+            Collider[] allGridCells = Physics.OverlapSphere(transform.position, 30f);
             foreach (Collider col in allGridCells)
             {
                 GridCell cell = col.GetComponent<GridCell>();

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InputManager : MonoBehaviour
@@ -10,8 +11,6 @@ public class InputManager : MonoBehaviour
     private Block selectedBlock;
     private Vector3 dragOffset;
     private bool isDragging = false;
-    private Vector3 originalBlockPosition;
-    
     private void Start()
     {
         if (gameCamera == null)
@@ -66,7 +65,7 @@ public class InputManager : MonoBehaviour
     {
         Ray ray = gameCamera.ScreenPointToRay(screenPosition);
         RaycastHit hit;
-    
+
         if (Physics.Raycast(ray, out hit, 100f, blockLayer))
         {
             Block block = hit.collider.GetComponentInParent<Block>();
@@ -75,12 +74,14 @@ public class InputManager : MonoBehaviour
                 selectedBlock = block;
                 selectedBlock.StartDrag();
                 isDragging = true;
-                originalBlockPosition = block.transform.position;
+            
                 Vector3 hitPointWorld = hit.point;
                 dragOffset = block.transform.position - hitPointWorld;
+            
                 Vector3 newPosition = block.transform.position;
                 newPosition.z += dragZOffset;
                 block.transform.position = newPosition;
+            
                 selectedBlock.HighlightGridCells(true);
             }
         }
@@ -100,51 +101,44 @@ public class InputManager : MonoBehaviour
         selectedBlock.OnDrag(targetPosition);
         selectedBlock.HighlightGridCells(true);
     }
-    
     private void HandleTouchUp(Vector2 screenPosition)
     {
         if (selectedBlock == null || !isDragging)
         {
             return;
         }
-        GridCell targetCell = null;
+        GridCell closestHighlightedCell = null;
         float closestDistance = float.MaxValue;
-        Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, 5f);
+
+        Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, 1f);
         foreach (Collider col in hitColliders)
         {
             GridCell cell = col.GetComponent<GridCell>();
             if (cell != null && cell.IsHighlighted())
             {
-                float distance = Vector3.Distance(selectedBlock.transform.position, cell.GetWorldPosition());
+                float distance = Vector3.Distance(selectedBlock.transform.position, cell.transform.position);
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
-                    targetCell = cell;
+                    closestHighlightedCell = cell;
                 }
             }
         }
-        Vector3 finalPosition;
-        if (targetCell != null)
+        if (closestHighlightedCell != null)
         {
-            finalPosition = targetCell.GetWorldPosition();
-            finalPosition.z = originalBlockPosition.z;
+            Vector3 targetPos = closestHighlightedCell.transform.position;
+            selectedBlock.EndDragSimple(targetPos);
         }
         else
         {
-            Vector3 worldPos = GetWorldPositionFromScreen(screenPosition);
-            finalPosition = worldPos + dragOffset;
-            finalPosition.z = originalBlockPosition.z;
+            selectedBlock.EndDragSimple(selectedBlock.originalPosition);
         }
-        selectedBlock.EndDragSimple(finalPosition);
         selectedBlock.HighlightGridCells(false);
-        if (blockManager != null && blockManager.CheckLevelCompletion())
-        {
-            Debug.Log("Level completed!");
-        }
-    
+
         selectedBlock = null;
         isDragging = false;
     }
+
     
     private Vector3 GetWorldPositionFromScreen(Vector2 screenPosition)
     {
