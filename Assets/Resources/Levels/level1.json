@@ -1,0 +1,67 @@
+{
+  "levelId": 1,
+  "timeLimit": 150,
+  "boards": [
+    {
+      "id": "board1",
+      "position": "top-left",
+      "rows": 4,
+      "columns": 4,
+      "hasCustomShape": false,
+      "blocks": [
+        {
+          "id": "block1",
+          "color": "red",
+          "isFixed": false,
+          "parts": [
+            {"gridX": 0, "gridY": 0},
+            {"gridX": 0, "gridY": 1},
+            {"gridX": 0, "gridY": 2},
+            {"gridX": 1, "gridY": 2}
+          ]
+        },
+        {
+          "id": "block2",
+          "color": "blue",
+          "isFixed": false,
+          "parts": [
+            {"gridX": 3, "gridY": 3},
+            {"gridX": 2, "gridY": 3},
+            {"gridX": 4, "gridY": 3},
+            {"gridX": 3, "gridY": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "board2",
+      "position": "top-right",
+      "rows": 4,
+      "columns": 4,
+      "hasCustomShape": false,
+      "blocks": [
+        {
+          "id": "block3",
+          "color": "green",
+          "isFixed": false,
+          "parts": [
+            {"gridX": 0, "gridY": 0},
+            {"gridX": 1, "gridY": 0},
+            {"gridX": 2, "gridY": 0}
+          ]
+        },
+        {
+          "id": "block4",
+          "color": "yellow",
+          "isFixed": true,
+          "parts": [
+            {"gridX": 2, "gridY": 2},
+            {"gridX": 3, "gridY": 2},
+            {"gridX": 2, "gridY": 3},
+            {"gridX": 3, "gridY": 3}
+          ]
+        }
+      ]
+    }
+  ]
+}
