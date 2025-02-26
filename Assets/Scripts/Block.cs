@@ -15,7 +15,7 @@ public class Block : MonoBehaviour
     private Vector3 dragOffset;
     public Vector3 originalPosition;
     private bool isDragging = false;
-    private float orginalZOffset=0.005f;
+    public float orginalZOffset=0.005f;
 
     private void Start()
     {
@@ -98,9 +98,9 @@ public class Block : MonoBehaviour
         transform.position = finalPosition;
     }
 
-    public List<Vector2Int> GetOccupiedGridPositions()
+    public int GetBlockPartCount()
     {
-        return new List<Vector2Int>(gridPositions);
+        return blockParts.Count;
     }
     public void HighlightGridCells(bool highlighted)
     {
