@@ -2,6 +2,8 @@
   "levelId": 1,
   "timeLimit": 150,
   "requiredCompletedBoards": 2,
+  "boardSpacing": 3,
+  "cameraOffset":2.5,
   "boards": [
     {
       "id": "board1",

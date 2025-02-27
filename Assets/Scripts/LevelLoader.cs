@@ -8,6 +8,8 @@ public class LevelData
     public int levelId;
     public int timeLimit;
     public int requiredCompletedBoards;
+    public float boardSpacing = 4.0f; 
+    public float cameraOffset = 4.0f;
     public List<BoardData> boards;
 }
 
@@ -76,6 +78,8 @@ public class LevelLoader : MonoBehaviour
             string jsonText = levelTextAsset.text;
             currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
             requiredCompletedBoards=currentLevelData.requiredCompletedBoards;
+            boardSpacing = currentLevelData.boardSpacing;
+            cameraOffset = currentLevelData.cameraOffset;
             CreateBoards();
         }
         else

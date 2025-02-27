@@ -1,43 +1,95 @@
 {
   "levelId": 2,
-  "timeLimit": 120,
+  "timeLimit": 360,
+  "requiredCompletedBoards": 2,
+  "boardSpacing": 5,
+  "cameraOffset": 10,
   "boards": [
     {
       "id": "board1",
-      "position": "top-left",
+      "position": "top",
       "rows": 4,
-      "columns": 3,
+      "columns": 4,
+      "hasCustomShape": false,
       "blocks": [
-        {"color": "red", "posX": 0, "posY": 0, "isFixed": false},
-        {"color": "blue", "posX": 1, "posY": 0, "isFixed": false}
+        {
+          "id": "block1",
+          "color": "green",
+          "isFixed": true,
+          "parts": [
+            {"gridX": 0, "gridY": 0},
+            {"gridX": 1, "gridY": 0},
+            {"gridX": 2, "gridY": 0},
+            {"gridX": 3, "gridY": 0},
+            {"gridX": 0, "gridY": 1},
+            {"gridX": 3, "gridY": 1},
+            {"gridX": 0, "gridY": 2},
+            {"gridX": 3, "gridY": 2},
+            {"gridX": 0, "gridY": 3},
+            {"gridX": 1, "gridY": 3},
+            {"gridX": 2, "gridY": 3},
+            {"gridX": 3, "gridY": 3}
+          ]
+        },
+        {
+          "id": "block2",
+          "color": "orange",
+          "isFixed": false,
+          "parts": [
+            {"gridX": 1, "gridY": 1},
+            {"gridX": 2, "gridY": 1},
+            {"gridX": 1, "gridY": 2},
+            {"gridX": 2, "gridY": 2}
+          ]
+        }
       ]
     },
     {
       "id": "board2",
-      "position": "top-right",
+      "position": "middle",
       "rows": 4,
-      "columns": 3,
-      "blocks": [
-        {"color": "yellow", "posX": 0, "posY": 0, "isFixed": false}
-      ]
+      "columns": 4,
+      "hasCustomShape": false,
+      "blocks": []
     },
     {
       "id": "board3",
-      "position": "bottom-center",
-      "rows": 3,
-      "columns": 3,
-      "hasCustomShape": true,
-      "customCells": [
-        {"x": 0, "y": 0},
-        {"x": 1, "y": 0},
-        {"x": 2, "y": 0},
-        {"x": 0, "y": 1},
-        {"x": 2, "y": 1},
-        {"x": 0, "y": 2},
-        {"x": 1, "y": 2},
-        {"x": 2, "y": 2}
-      ],
-      "blocks": []
+      "position": "bottom",
+      "rows": 4,
+      "columns": 4,
+      "hasCustomShape": false,
+      "blocks": [
+        {
+          "id": "block3",
+          "color": "orange",
+          "isFixed": false,
+          "parts": [
+            {"gridX": 0, "gridY": 0},
+            {"gridX": 1, "gridY": 0},
+            {"gridX": 2, "gridY": 0},
+            {"gridX": 3, "gridY": 0},
+            {"gridX": 0, "gridY": 1},
+            {"gridX": 3, "gridY": 1},
+            {"gridX": 0, "gridY": 2},
+            {"gridX": 3, "gridY": 2},
+            {"gridX": 0, "gridY": 3},
+            {"gridX": 1, "gridY": 3},
+            {"gridX": 2, "gridY": 3},
+            {"gridX": 3, "gridY": 3}
+          ]
+        },
+        {
+          "id": "block4",
+          "color": "green",
+          "isFixed": false,
+          "parts": [
+            {"gridX": 1, "gridY": 1},
+            {"gridX": 2, "gridY": 1},
+            {"gridX": 1, "gridY": 2},
+            {"gridX": 2, "gridY": 2}
+          ]
+        }
+      ]
     }
   ]
 }
