@@ -422,8 +422,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boardPrefab: {fileID: 1434593898997083626, guid: 0c56c15cec504dd4b9cc0e061f11a44a, type: 3}
   levelNumber: 1
-  boardSpacing: 5
-  cameraOffset: 4
+  boardSpacing: 3
+  cameraOffset: 3
   mainCamera: {fileID: 330585545}
   blockManager: {fileID: 321266888}
 --- !u!4 &187379898
@@ -555,6 +555,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: bbb3f394df5ef1545a5d2fe243bd963d, type: 2}
   - {fileID: 2100000, guid: 3c74a93f1fdbe6a46a83e7e9570f601f, type: 2}
   - {fileID: 2100000, guid: d6a8791a0535d0c43abc6706018bbd4a, type: 2}
+  - {fileID: 2100000, guid: 861dc2cb24a696940af6b9e74fbefdd2, type: 2}
 --- !u!4 &321266889
 Transform:
   m_ObjectHideFlags: 0

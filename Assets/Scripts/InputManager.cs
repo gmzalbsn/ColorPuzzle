@@ -108,78 +108,102 @@ public class InputManager : MonoBehaviour
     }
 
     private void HandleTouchUp(Vector2 screenPosition)
-{
-    if (selectedBlock == null || !isDragging)
     {
-        return;
-    }
-
-    List<GridCell> highlightedCells = new List<GridCell>();
-    GridManager commonGridManager = null;
-
-    // Bloğun altındaki tüm highlight edilmiş grid hücrelerini bul
-    Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, 1f);
-    foreach (Collider col in hitColliders)
-    {
-        GridCell cell = col.GetComponent<GridCell>();
-        if (cell != null && cell.IsHighlighted())
+        if (selectedBlock == null || !isDragging)
         {
-            highlightedCells.Add(cell);
+            return;
+        }
 
-            // İlk bulunan GridManager'ı kaydet
-            if (commonGridManager == null)
+        List<GridCell> highlightedCells = GetHighlightedCellsUnderBlock(out GridManager commonGridManager);
+
+        if (highlightedCells == null || IsAnotherBlockPresent(highlightedCells))
+        {
+            Debug.Log("Başka bir blok var veya farklı gridler seçildi, başlangıç pozisyonuna dönülüyor.");
+            ResetBlockPosition();
+            return;
+        }
+
+        if (highlightedCells.Count == selectedBlock.GetBlockPartCount())
+        {
+            PlaceBlockOnAveragePosition(highlightedCells);
+        }
+        else
+        {
+            Debug.Log("Yetersiz veya yanlış grid sayısı, başlangıç pozisyonuna geri dönülüyor.");
+            ResetBlockPosition();
+        }
+
+        selectedBlock.HighlightGridCells(false);
+        selectedBlock = null;
+        isDragging = false;
+    }
+    private bool IsAnotherBlockPresent(List<GridCell> highlightedCells)
+    {
+        foreach (GridCell cell in highlightedCells)
+        {
+            Collider[] colliders = Physics.OverlapSphere(cell.transform.position, 0.1f);
+            foreach (Collider col in colliders)
             {
-                commonGridManager = cell.GetComponentInParent<GridManager>();
-            }
-            else
-            {
-                // Eğer farklı GridManager'lar varsa, başlangıç pozisyonuna dön
-                if (cell.GetComponentInParent<GridManager>() != commonGridManager)
+                Block otherBlock = col.GetComponentInParent<Block>();
+                if (otherBlock != null && otherBlock != selectedBlock)
                 {
-                    Debug.Log("Farklı GridManager'lar var, başlangıç pozisyonuna geri dönülüyor.");
-                    selectedBlock.EndDragSimple(selectedBlock.originalPosition);
-                    selectedBlock.HighlightGridCells(false);
-                    selectedBlock = null;
-                    isDragging = false;
-                    return;
+                    return true; // Başka bir blok var
                 }
             }
         }
+        return false; // Başka blok yok, yerleştirilebilir
     }
 
-    // Bloğun sahip olduğu parçaların sayısını al
-    int blockPartCount = selectedBlock.GetBlockPartCount();
-
-    // Eğer highlight edilen hücre sayısı, blockPart sayısıyla eşleşiyorsa yerleştir
-    if (highlightedCells.Count == blockPartCount)
+    private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
     {
-        // **Highlight edilen hücrelerin ortalama pozisyonunu al**
+        List<GridCell> highlightedCells = new List<GridCell>();
+        commonGridManager = null;
+
+        Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, 1f);
+
+        foreach (Collider col in hitColliders)
+        {
+            GridCell cell = col.GetComponent<GridCell>();
+            if (cell != null && cell.IsHighlighted())
+            {
+                highlightedCells.Add(cell);
+                GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
+
+                if (commonGridManager == null)
+                {
+                    commonGridManager = cellGridManager;
+                }
+                else if (commonGridManager != cellGridManager)
+                {
+                    return null; // Farklı GridManager'lar bulundu
+                }
+            }
+        }
+
+        return highlightedCells;
+    }
+    private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
+    {
+        if (highlightedCells.Count == 0)
+            return;
+
         Vector3 averagePosition = Vector3.zero;
+
         foreach (GridCell cell in highlightedCells)
         {
             averagePosition += cell.transform.position;
         }
-        averagePosition /= highlightedCells.Count; // Ortalama merkezi bul
 
-        // Z offset düzeltmesi yap
-        averagePosition.z = selectedBlock.originalPosition.z - selectedBlock.orginalZOffset;
+        averagePosition /= highlightedCells.Count;
+        averagePosition.z = selectedBlock.originalPosition.z - selectedBlock.orginalZOffset; // Z düzeltmesi
 
-        // Bloğu ortalanmış noktaya yerleştir
         selectedBlock.EndDragSimple(averagePosition);
-        Debug.Log($"Blok başarıyla ortalandı ve yerleştirildi: {averagePosition}");
+        selectedBlock.originalPosition = averagePosition;
     }
-    else
+    private void ResetBlockPosition()
     {
-        Debug.Log("Yetersiz veya yanlış grid sayısı, başlangıç pozisyonuna geri dönülüyor.");
         selectedBlock.EndDragSimple(selectedBlock.originalPosition);
     }
-
-    // Highlight'ları temizle
-    selectedBlock.HighlightGridCells(false);
-
-    selectedBlock = null;
-    isDragging = false;
-}
 
 
     private Vector3 GetWorldPositionFromScreen(Vector2 screenPosition)
