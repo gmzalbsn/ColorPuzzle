@@ -52,16 +52,16 @@ public class BlockPartPosition
 public class LevelLoader : MonoBehaviour
 {
     [SerializeField] private GameObject boardPrefab;
-    [SerializeField] private int levelNumber=1;
     [SerializeField] private float boardSpacing = 4f;
     [SerializeField] private float cameraOffset = 4f;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private BlockManager blockManager;
     private string levelFolderPath = "Assets/Scripts/LevelJson";
     private List<GridManager> boardManagers = new List<GridManager>();
-    private LevelData currentLevelData;
+    public LevelData currentLevelData;
     public static int requiredCompletedBoards;
     public static int completedBoardsAmount = 0;
+    public int levelNumber=1;
     private void Start()
     {
         completedBoardsAmount = 0;

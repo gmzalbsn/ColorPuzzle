@@ -118,6 +118,10 @@ public class GridManager : MonoBehaviour
         
         CheckBoardCompletion();
     }
+    // GridManager.cs içindeki CheckBoardCompletion metoduna eklenecek kısım:
+
+    // GridManager.cs içindeki CheckBoardCompletion metoduna eklenecek kod:
+
     private void CheckBoardCompletion()
     {
         if (totalCellCount == 0)
@@ -125,36 +129,52 @@ public class GridManager : MonoBehaviour
             isCompleted = false;
             return;
         }
+    
         int totalPartCount = 0;
         foreach (var entry in blockPartsByColor)
         {
             totalPartCount += entry.Value;
         }
-    
+
         if (totalPartCount == totalCellCount)
         {
             if (blockPartsByColor.Count == 1)
             {
                 if (!isCompleted)
                 {
+                    string color = blockPartsByColor.Keys.First();
                     isCompleted = true;
+                    Debug.Log($"<color=green>BOARD TAMAMLANDI!</color> Board {boardId} tek renk ({color}) ile dolduruldu!");
+                
+                    // Tamamlanma sayacını artır
                     LevelLoader.completedBoardsAmount += 1;
-                    if (LevelLoader.completedBoardsAmount >= LevelLoader.requiredCompletedBoards)
+                    Debug.Log($"Tamamlanan board sayısı: {LevelLoader.completedBoardsAmount}/{LevelLoader.requiredCompletedBoards}");
+                
+                    // GameManager'a bildir
+                    if (GameManager.Instance != null)
                     {
-                        Debug.Log("***** LEVEL COMPLETED! *****");
+                        GameManager.Instance.OnBoardCompleted();
                     }
                 
+                    // Blokları sabitle
                     FixAllBlocksOnBoard();
                 }
                 return;
             }
         }
+    
         if (isCompleted)
         {
             isCompleted = false;
             LevelLoader.completedBoardsAmount -= 1;
             if (LevelLoader.completedBoardsAmount < 0)
                 LevelLoader.completedBoardsAmount = 0;
+        
+            // GameManager'a bildir
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnBoardCompleted();
+            }
         }
     }
     
