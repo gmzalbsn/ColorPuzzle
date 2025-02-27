@@ -7,7 +7,9 @@ public class GridCell : MonoBehaviour
     [SerializeField] private Color highlightColor = Color.yellow;
     private bool isHighlighted = false;
     private Vector2Int coordinates;
-    private bool isOccupied = false;
+    public bool isOccupied = false;
+    public string occupiedByColor = "";
+    public Block occupiedByBlock = null;
     
     public void Initialize(Vector2Int coords)
     {
@@ -32,5 +34,32 @@ public class GridCell : MonoBehaviour
     public bool IsHighlighted()
     {
         return isHighlighted;
+    }
+    public void SetOccupied(bool occupied, string color, Block block)
+    {
+        if (isOccupied != occupied || occupiedByColor != color)
+        {
+            if (isOccupied && !string.IsNullOrEmpty(occupiedByColor))
+            {
+                GridManager gridManager = GetComponentInParent<GridManager>();
+                if (gridManager != null)
+                {
+                    gridManager.UpdateOccupiedCell(occupiedByColor, coordinates, false);
+                }
+            }
+            
+            isOccupied = occupied;
+            occupiedByColor = occupied ? color : "";
+            occupiedByBlock = occupied ? block : null;
+            
+            if (occupied && !string.IsNullOrEmpty(color))
+            {
+                GridManager gridManager = GetComponentInParent<GridManager>();
+                if (gridManager != null)
+                {
+                    gridManager.UpdateOccupiedCell(color, coordinates, true);
+                }
+            }
+        }
     }
 }

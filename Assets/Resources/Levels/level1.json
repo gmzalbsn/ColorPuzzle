@@ -1,7 +1,7 @@
 {
   "levelId": 1,
   "timeLimit": 150,
-  "targetCompletedBoards": 2,
+  "requiredCompletedBoards": 2,
   "boards": [
     {
       "id": "board1",

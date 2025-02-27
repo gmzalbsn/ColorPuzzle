@@ -1,12 +1,25 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.Events;
+
+[System.Serializable]
 
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private GameObject gridCellPrefab;
     [SerializeField] private float cellSpacing = 1.1f; 
-    
     private Dictionary<Vector2Int, GridCell> gridCells = new Dictionary<Vector2Int, GridCell>();
+    
+    [SerializeField] private string boardId;
+    private int totalCellCount;
+    private Dictionary<string, int> blockPartsByColor = new Dictionary<string, int>();
+    private Dictionary<string, int> occupiedCellsByColor = new Dictionary<string, int>();
+    private bool isCompleted = false;
+    public string GetBoardId() { return boardId; }
+    public void SetBoardId(string id) { boardId = id; }
+    public int GetTotalCellCount() { return totalCellCount; }
+    public bool IsCompleted() { return isCompleted; }
     public void CreateGrid(int rows, int columns)
     {
         ClearGrid(); 
@@ -18,6 +31,7 @@ public class GridManager : MonoBehaviour
                 CreateCell(col, row);
             }
         }
+        totalCellCount = gridCells.Count;
     }
     public void CreateCustomGrid(int rows, int columns, List<CellPosition> customCells)
     {
@@ -34,6 +48,7 @@ public class GridManager : MonoBehaviour
         {
             CreateGrid(rows, columns);
         }
+        totalCellCount = gridCells.Count;
     }
     private void CreateCell(int col, int row)
     {
@@ -63,5 +78,125 @@ public class GridManager : MonoBehaviour
         if (gridCells.ContainsKey(key))
             return gridCells[key];
         return null;
+    }
+    public void RegisterBlockParts(string color, int partCount)
+    {
+        if (string.IsNullOrEmpty(color))
+        {
+            return;
+        }
+
+        if (!blockPartsByColor.ContainsKey(color))
+        {
+            blockPartsByColor[color] = 0;
+        }
+    
+        blockPartsByColor[color] += partCount;
+        if (blockPartsByColor[color] <= 0)
+        {
+            blockPartsByColor.Remove(color);
+        }
+        CheckBoardCompletion();
+    }
+     public void UpdateOccupiedCell(string color, Vector2Int cellPosition, bool isOccupied)
+    {
+        if (!occupiedCellsByColor.ContainsKey(color))
+        {
+            occupiedCellsByColor[color] = 0;
+        }
+
+        if (isOccupied)
+        {
+            occupiedCellsByColor[color]++;
+        }
+        else
+        {
+            occupiedCellsByColor[color]--;
+            if (occupiedCellsByColor[color] < 0)
+                occupiedCellsByColor[color] = 0;
+        }
+        
+        CheckBoardCompletion();
+    }
+    private void CheckBoardCompletion()
+    {
+        if (totalCellCount == 0)
+        {
+            isCompleted = false;
+            return;
+        }
+        int totalPartCount = 0;
+        foreach (var entry in blockPartsByColor)
+        {
+            totalPartCount += entry.Value;
+        }
+    
+        if (totalPartCount == totalCellCount)
+        {
+            if (blockPartsByColor.Count == 1)
+            {
+                if (!isCompleted)
+                {
+                    isCompleted = true;
+                    LevelLoader.completedBoardsAmount += 1;
+                    if (LevelLoader.completedBoardsAmount >= LevelLoader.requiredCompletedBoards)
+                    {
+                        Debug.Log("***** LEVEL COMPLETED! *****");
+                    }
+                
+                    FixAllBlocksOnBoard();
+                }
+                return;
+            }
+        }
+        if (isCompleted)
+        {
+            isCompleted = false;
+            LevelLoader.completedBoardsAmount -= 1;
+            if (LevelLoader.completedBoardsAmount < 0)
+                LevelLoader.completedBoardsAmount = 0;
+        }
+    }
+    
+    public void PrintBoardStatus()
+    {
+        int totalPartCount = 0;
+        
+        if (blockPartsByColor.Count == 0)
+        {
+            
+        }
+        else
+        {
+            foreach (var entry in blockPartsByColor)
+            {
+                string color = entry.Key;
+                int partCount = entry.Value;
+                totalPartCount += partCount;
+            }
+        }
+    }
+    public void FixAllBlocksOnBoard()
+    {
+        HashSet<Block> uniqueBlocks = new HashSet<Block>();
+        foreach (var cellEntry in gridCells)
+        {
+            GridCell cell = cellEntry.Value;
+            if (cell.isOccupied)
+            {
+                Block block = cell.occupiedByBlock;
+                if (block != null && !uniqueBlocks.Contains(block))
+                {
+                    uniqueBlocks.Add(block);
+                }
+            }
+        }
+        foreach (Block block in uniqueBlocks)
+        {
+            if (!block.IsFixed())
+            {
+                block.SetFixed(true);
+            }
+        }
     }
 }

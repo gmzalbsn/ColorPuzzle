@@ -12,6 +12,9 @@ public class InputManager : MonoBehaviour
     private Vector3 dragOffset;
     private bool isDragging = false;
 
+    private GridManager sourceGridManager;
+    private string blockColor;
+    private int blockPartCount;
     private void Start()
     {
         if (gameCamera == null)
@@ -65,31 +68,50 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    private void HandleTouchDown(Vector2 screenPosition)
+   private void HandleTouchDown(Vector2 screenPosition)
+{
+    Ray ray = gameCamera.ScreenPointToRay(screenPosition);
+    RaycastHit hit;
+
+    if (Physics.Raycast(ray, out hit, 100f, blockLayer))
     {
-        Ray ray = gameCamera.ScreenPointToRay(screenPosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit, 100f, blockLayer))
+        Block block = hit.collider.GetComponentInParent<Block>();
+        if (block != null && !block.IsFixed())
         {
-            Block block = hit.collider.GetComponentInParent<Block>();
-            if (block != null && !block.IsFixed())
+            GridCell closestCell = FindClosestGridCell(block.transform.position);
+            if (closestCell != null)
             {
-                selectedBlock = block;
-                selectedBlock.StartDrag();
-                isDragging = true;
-
-                Vector3 hitPointWorld = hit.point;
-                dragOffset = block.transform.position - hitPointWorld;
-
-                Vector3 newPosition = block.transform.position;
-                newPosition.z += dragZOffset;
-                block.transform.position = newPosition;
-
-                selectedBlock.HighlightGridCells(true);
+                sourceGridManager = closestCell.GetComponentInParent<GridManager>();
+                if (sourceGridManager != null && sourceGridManager.IsCompleted())
+                {
+                    sourceGridManager.FixAllBlocksOnBoard();
+                    return;
+                }
+                
+                blockColor = block.GetColor();
+                blockPartCount = block.GetBlockPartCount();
+                if (sourceGridManager != null)
+                {
+                    sourceGridManager.RegisterBlockParts(blockColor, -blockPartCount);
+                    sourceGridManager.PrintBoardStatus();
+                }
             }
+            
+            selectedBlock = block;
+            selectedBlock.StartDrag();
+            isDragging = true;
+
+            Vector3 hitPointWorld = hit.point;
+            dragOffset = block.transform.position - hitPointWorld;
+
+            Vector3 newPosition = block.transform.position;
+            newPosition.z += dragZOffset;
+            block.transform.position = newPosition;
+
+            selectedBlock.HighlightGridCells(true);
         }
     }
+}
 
     private void HandleTouchDrag(Vector2 screenPosition)
     {
@@ -113,29 +135,30 @@ public class InputManager : MonoBehaviour
         {
             return;
         }
+        GridManager targetGridManager = null;
+        List<GridCell> highlightedCells = GetHighlightedCellsUnderBlock(out targetGridManager);
+        bool validTarget = (highlightedCells != null);
+        bool noOtherBlockPresent = validTarget && !IsAnotherBlockPresent(highlightedCells);
+        bool correctCellCount = validTarget && (highlightedCells.Count == selectedBlock.GetBlockPartCount());
 
-        List<GridCell> highlightedCells = GetHighlightedCellsUnderBlock(out GridManager commonGridManager);
-
-        if (highlightedCells == null || IsAnotherBlockPresent(highlightedCells))
+        if (!validTarget || !noOtherBlockPresent || !correctCellCount)
         {
-            Debug.Log("Başka bir blok var veya farklı gridler seçildi, başlangıç pozisyonuna dönülüyor.");
             ResetBlockPosition();
+            selectedBlock.HighlightGridCells(false);
+            selectedBlock = null;
+            isDragging = false;
             return;
         }
-
-        if (highlightedCells.Count == selectedBlock.GetBlockPartCount())
+        
+        PlaceBlockOnAveragePosition(highlightedCells);
+        if (targetGridManager != null)
         {
-            PlaceBlockOnAveragePosition(highlightedCells);
+            targetGridManager.RegisterBlockParts(blockColor, blockPartCount);
         }
-        else
-        {
-            Debug.Log("Yetersiz veya yanlış grid sayısı, başlangıç pozisyonuna geri dönülüyor.");
-            ResetBlockPosition();
-        }
-
         selectedBlock.HighlightGridCells(false);
         selectedBlock = null;
         isDragging = false;
+        sourceGridManager = null;
     }
     private bool IsAnotherBlockPresent(List<GridCell> highlightedCells)
     {
@@ -147,11 +170,11 @@ public class InputManager : MonoBehaviour
                 Block otherBlock = col.GetComponentInParent<Block>();
                 if (otherBlock != null && otherBlock != selectedBlock)
                 {
-                    return true; // Başka bir blok var
+                    return true; 
                 }
             }
         }
-        return false; // Başka blok yok, yerleştirilebilir
+        return false; 
     }
 
     private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
@@ -168,18 +191,21 @@ public class InputManager : MonoBehaviour
             {
                 highlightedCells.Add(cell);
                 GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
-
+                cellGridManager.PrintBoardStatus();
                 if (commonGridManager == null)
                 {
                     commonGridManager = cellGridManager;
                 }
                 else if (commonGridManager != cellGridManager)
                 {
-                    return null; // Farklı GridManager'lar bulundu
+                    return null; 
                 }
             }
         }
-
+        if (commonGridManager != null)
+        {
+            commonGridManager.PrintBoardStatus();
+        }
         return highlightedCells;
     }
     private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
@@ -195,16 +221,47 @@ public class InputManager : MonoBehaviour
         }
 
         averagePosition /= highlightedCells.Count;
-        averagePosition.z = selectedBlock.originalPosition.z - selectedBlock.orginalZOffset; // Z düzeltmesi
+        averagePosition.z = selectedBlock.originalPosition.z - selectedBlock.orginalZOffset;
 
         selectedBlock.EndDragSimple(averagePosition);
         selectedBlock.originalPosition = averagePosition;
     }
     private void ResetBlockPosition()
     {
-        selectedBlock.EndDragSimple(selectedBlock.originalPosition);
-    }
+        if (selectedBlock == null)
+        {
+            return;
+        }
+        Vector3 originalPos = selectedBlock.originalPosition;
+        selectedBlock.EndDragSimple(originalPos);
 
+        if (sourceGridManager != null && blockColor != null && blockPartCount > 0)
+        {
+            sourceGridManager.RegisterBlockParts(blockColor, blockPartCount);
+        }
+    }
+    private GridCell FindClosestGridCell(Vector3 position)
+    {
+        Collider[] hitColliders = Physics.OverlapSphere(position, 1f);
+        float closestDistance = float.MaxValue;
+        GridCell closestCell = null;
+        
+        foreach (Collider col in hitColliders)
+        {
+            GridCell cell = col.GetComponent<GridCell>();
+            if (cell != null)
+            {
+                float distance = Vector3.Distance(position, cell.transform.position);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestCell = cell;
+                }
+            }
+        }
+        
+        return closestCell;
+    }
 
     private Vector3 GetWorldPositionFromScreen(Vector2 screenPosition)
     {

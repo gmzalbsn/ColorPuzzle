@@ -17,6 +17,7 @@ public class Block : MonoBehaviour
     private bool isDragging = false;
     public float orginalZOffset=0.005f;
 
+    private List<GridCell> occupiedCells = new List<GridCell>();
     private void Start()
     {
         originalPosition=transform.localPosition;
@@ -47,6 +48,11 @@ public class Block : MonoBehaviour
         Vector3 pos = transform.position;
         pos.z -= orginalZOffset;
         transform.position = pos;
+        gridManager.RegisterBlockParts(blockColor, blockParts.Count);
+        if (isFixed)
+        {
+            UpdateOccupiedCells();
+        }
     }
     private void RecalculatePosition()
     {
@@ -74,10 +80,34 @@ public class Block : MonoBehaviour
     {
         return isFixed;
     }
+    public void SetFixed(bool fixState)
+    {
+        isFixed = fixState;
+        foreach (GameObject part in blockParts)
+        {
+            MeshRenderer renderer = part.GetComponent<BlockPart>()?.meshRenderer;
+            if (renderer != null)
+            {
+                Color color = renderer.material.color;
+                color.a = fixState ? 0.7f : 1.0f;
+                renderer.material.color = color;
+            }
+        }
+    }
     public void StartDrag()
     {
         if (isFixed) return;
-        
+        GridManager sourceGridManager = null;
+        if (occupiedCells.Count > 0 && occupiedCells[0] != null)
+        {
+            sourceGridManager = occupiedCells[0].GetComponentInParent<GridManager>();
+            if (sourceGridManager != null)
+            {
+                sourceGridManager.RegisterBlockParts(blockColor, -blockParts.Count);
+            }
+        }
+        ClearOccupiedCells();
+    
         isDragging = true;
     }
     public void OnDrag(Vector3 position)
@@ -89,12 +119,15 @@ public class Block : MonoBehaviour
     
     public void EndDragSimple(Vector3 finalPosition)
     {
-        if (!isDragging || isFixed) return;
+        if (!isDragging || isFixed)
+        {
+            return;
+        }
 
         isDragging = false;
         finalPosition.z = originalPosition.z - orginalZOffset;
-
         transform.position = finalPosition;
+        UpdateOccupiedCells();
     }
 
     public int GetBlockPartCount()
@@ -131,5 +164,40 @@ public class Block : MonoBehaviour
                 }
             }
         }
+    }
+    private void UpdateOccupiedCells()
+    {
+        ClearOccupiedCells();
+        foreach (GameObject part in blockParts)
+        {
+            Vector3 partWorldPos = transform.position + part.transform.localPosition;
+            Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, 0.5f);
+            
+            foreach (Collider col in hitColliders)
+            {
+                GridCell cell = col.GetComponent<GridCell>();
+                if (cell != null)
+                {
+                    cell.SetOccupied(true, blockColor, this);
+                    occupiedCells.Add(cell);
+                }
+            }
+        }
+    }
+    private void ClearOccupiedCells()
+    {
+        foreach (GridCell cell in occupiedCells)
+        {
+            if (cell != null)
+            {
+                cell.SetOccupied(false, "", null);
+            }
+        }
+        occupiedCells.Clear();
+    }
+    
+    private void OnDestroy()
+    {
+        ClearOccupiedCells();
     }
 }

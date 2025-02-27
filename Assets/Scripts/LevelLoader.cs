@@ -7,6 +7,7 @@ public class LevelData
 {
     public int levelId;
     public int timeLimit;
+    public int requiredCompletedBoards;
     public List<BoardData> boards;
 }
 
@@ -57,8 +58,11 @@ public class LevelLoader : MonoBehaviour
     private string levelFolderPath = "Assets/Scripts/LevelJson";
     private List<GridManager> boardManagers = new List<GridManager>();
     private LevelData currentLevelData;
+    public static int requiredCompletedBoards;
+    public static int completedBoardsAmount = 0;
     private void Start()
     {
+        completedBoardsAmount = 0;
         LoadLevelFromFile();
     }
     
@@ -71,6 +75,7 @@ public class LevelLoader : MonoBehaviour
         {
             string jsonText = levelTextAsset.text;
             currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
+            requiredCompletedBoards=currentLevelData.requiredCompletedBoards;
             CreateBoards();
         }
         else
@@ -115,6 +120,7 @@ public class LevelLoader : MonoBehaviour
             GameObject boardObj = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity, transform);
             boardObj.name = boardData.id;
             GridManager gridManager = boardObj.GetComponentInChildren<GridManager>();
+            gridManager.SetBoardId(boardData.id);
             if (boardData.hasCustomShape && boardData.customCells != null && boardData.customCells.Count > 0)
             {
                 gridManager.CreateCustomGrid(boardData.rows, boardData.columns, boardData.customCells);
