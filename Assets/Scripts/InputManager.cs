@@ -135,12 +135,12 @@ public class InputManager : MonoBehaviour
         {
             return;
         }
+    
         GridManager targetGridManager = null;
         List<GridCell> highlightedCells = GetHighlightedCellsUnderBlock(out targetGridManager);
         bool validTarget = (highlightedCells != null);
         bool noOtherBlockPresent = validTarget && !IsAnotherBlockPresent(highlightedCells);
-        bool correctCellCount = validTarget && (highlightedCells.Count == selectedBlock.GetBlockPartCount());
-
+        bool correctCellCount = validTarget && (highlightedCells.Count > 0);
         if (!validTarget || !noOtherBlockPresent || !correctCellCount)
         {
             ResetBlockPosition();
@@ -149,12 +149,13 @@ public class InputManager : MonoBehaviour
             isDragging = false;
             return;
         }
-        
         PlaceBlockOnAveragePosition(highlightedCells);
+    
         if (targetGridManager != null)
         {
             targetGridManager.RegisterBlockParts(blockColor, blockPartCount);
         }
+    
         selectedBlock.HighlightGridCells(false);
         selectedBlock = null;
         isDragging = false;
@@ -177,37 +178,67 @@ public class InputManager : MonoBehaviour
         return false; 
     }
 
-    private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
+   private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
+{
+    List<GridCell> highlightedCells = new List<GridCell>();
+    commonGridManager = null;
+    
+    // Daha geniş bir alanda ara
+    float searchRadius = 2.0f;
+    
+    Debug.Log($"Vurgulanan hücreler aranıyor. Blok: {selectedBlock.name}");
+    
+    // Önce tüm hücreleri kontrol et
+    Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, searchRadius);
+    Debug.Log($"Toplam {hitColliders.Length} collider bulundu");
+    
+    // Tüm highlight edilmiş hücreleri bul
+    foreach (Collider col in hitColliders)
     {
-        List<GridCell> highlightedCells = new List<GridCell>();
-        commonGridManager = null;
-
-        Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, 1f);
-
-        foreach (Collider col in hitColliders)
+        GridCell cell = col.GetComponent<GridCell>();
+        if (cell != null)
         {
-            GridCell cell = col.GetComponent<GridCell>();
-            if (cell != null && cell.IsHighlighted())
+            // Debug: Tüm hücreleri göster
+            Debug.Log($"Hücre: {cell.name}, Highlight: {cell.IsHighlighted()}, Pozisyon: {cell.transform.position}");
+            
+            if (cell.IsHighlighted())
             {
                 highlightedCells.Add(cell);
                 GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
-                cellGridManager.PrintBoardStatus();
+                
                 if (commonGridManager == null)
                 {
                     commonGridManager = cellGridManager;
                 }
                 else if (commonGridManager != cellGridManager)
                 {
-                    return null; 
+                    Debug.LogWarning("Farklı GridManager'lar bulundu!");
+                    return null;
                 }
             }
         }
-        if (commonGridManager != null)
-        {
-            commonGridManager.PrintBoardStatus();
-        }
-        return highlightedCells;
     }
+    
+    // Highlight edilen hücre sayısını göster
+    Debug.Log($"Highlight edilen hücre sayısı: {highlightedCells.Count}, Blok parça sayısı: {selectedBlock.GetBlockPartCount()}");
+    
+    // Önemli değişiklik: Eğer hiç vurgulanan hücre yoksa null döndür
+    if (highlightedCells.Count == 0)
+    {
+        Debug.LogWarning("Hiç hücre vurgulanmamış!");
+        return null;
+    }
+    
+    // Önemli: Board tamamlanmışsa veya hücreler sabit bloklar tarafından işgal edilmişse bu kontrolü kaldır
+    // Hücre sayısı kontrolü
+    /* if (highlightedCells.Count != selectedBlock.GetBlockPartCount())
+    {
+        Debug.LogWarning($"Hücre sayısı uygun değil: Bulunan={highlightedCells.Count}, Gereken={selectedBlock.GetBlockPartCount()}");
+        return null;
+    } */
+    
+    return highlightedCells;
+}
     private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
     {
         if (highlightedCells.Count == 0)
@@ -222,7 +253,6 @@ public class InputManager : MonoBehaviour
 
         averagePosition /= highlightedCells.Count;
         averagePosition.z = selectedBlock.originalPosition.z - selectedBlock.orginalZOffset;
-
         selectedBlock.EndDragSimple(averagePosition);
         selectedBlock.originalPosition = averagePosition;
     }
