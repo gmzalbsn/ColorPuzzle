@@ -182,24 +182,15 @@ public class InputManager : MonoBehaviour
 {
     List<GridCell> highlightedCells = new List<GridCell>();
     commonGridManager = null;
-    
-    // Daha geniş bir alanda ara
     float searchRadius = 2.0f;
-    
-    Debug.Log($"Vurgulanan hücreler aranıyor. Blok: {selectedBlock.name}");
-    
-    // Önce tüm hücreleri kontrol et
+
     Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, searchRadius);
-    Debug.Log($"Toplam {hitColliders.Length} collider bulundu");
     
-    // Tüm highlight edilmiş hücreleri bul
     foreach (Collider col in hitColliders)
     {
         GridCell cell = col.GetComponent<GridCell>();
         if (cell != null)
         {
-            // Debug: Tüm hücreleri göster
-            Debug.Log($"Hücre: {cell.name}, Highlight: {cell.IsHighlighted()}, Pozisyon: {cell.transform.position}");
             
             if (cell.IsHighlighted())
             {
@@ -212,30 +203,16 @@ public class InputManager : MonoBehaviour
                 }
                 else if (commonGridManager != cellGridManager)
                 {
-                    Debug.LogWarning("Farklı GridManager'lar bulundu!");
                     return null;
                 }
             }
         }
     }
-    
-    // Highlight edilen hücre sayısını göster
-    Debug.Log($"Highlight edilen hücre sayısı: {highlightedCells.Count}, Blok parça sayısı: {selectedBlock.GetBlockPartCount()}");
-    
-    // Önemli değişiklik: Eğer hiç vurgulanan hücre yoksa null döndür
+
     if (highlightedCells.Count == 0)
     {
-        Debug.LogWarning("Hiç hücre vurgulanmamış!");
         return null;
     }
-    
-    // Önemli: Board tamamlanmışsa veya hücreler sabit bloklar tarafından işgal edilmişse bu kontrolü kaldır
-    // Hücre sayısı kontrolü
-    /* if (highlightedCells.Count != selectedBlock.GetBlockPartCount())
-    {
-        Debug.LogWarning($"Hücre sayısı uygun değil: Bulunan={highlightedCells.Count}, Gereken={selectedBlock.GetBlockPartCount()}");
-        return null;
-    } */
     
     return highlightedCells;
 }

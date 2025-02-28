@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -8,6 +9,8 @@ public class GameManager : MonoBehaviour
     private float levelTimer = 0;
     private bool isTimerRunning = false;
     private bool isSoundOn = true;
+    private int currentStage = 1;        
+    private int totalStagesInLevel = 1; 
     
     private LevelLoader levelLoader;
     private UIManager uiManager;
@@ -16,7 +19,14 @@ public class GameManager : MonoBehaviour
     
     public delegate void TimerUpdatedHandler(float time);
     public event TimerUpdatedHandler OnTimerUpdated;
+    public delegate void StageProgressHandler(float progress, bool hasMultipleStages);
+    public event StageProgressHandler OnStageProgressUpdated;
 
+    private Dictionary<int, int> levelStages = new Dictionary<int, int>() {
+        { 1, 1 },  
+        { 2, 2 }, 
+        { 3, 1 },  
+    };
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -42,6 +52,19 @@ public class GameManager : MonoBehaviour
         }
         UpdateUI();
         LoadCurrentLevel();
+    }
+    public void ResetAllData()
+    {
+        PlayerPrefs.DeleteAll();
+        currentLevel = 1;
+        currentStage = 1;
+        totalStagesInLevel = 1;
+        totalStars = 0;
+        
+        isSoundOn = true;
+        SaveData();
+        LoadCurrentLevel();
+        UpdateUI();
     }
 
     private void Update()
@@ -71,12 +94,30 @@ public class GameManager : MonoBehaviour
             uiManager.UpdateLevelNumber(currentLevel);
             uiManager.UpdateTotalStars(totalStars);
             uiManager.UpdateSoundButtons(isSoundOn);
+            UpdateStageProgress();
         }
+    }
+    public int GetTotalStagesForLevel(int level) {
+        if (levelStages.ContainsKey(level))
+            return levelStages[level];
+        return 1;
+    }
+    private void UpdateStageProgress()
+    {
+        float progress = 0f;
+        bool hasMultipleStages = (totalStagesInLevel > 1);
+        
+        if (hasMultipleStages)
+        {
+            progress = (float)(currentStage - 1) / totalStagesInLevel;
+        }
+        OnStageProgressUpdated?.Invoke(progress, hasMultipleStages);
     }
 
     private void LoadSavedData()
     {
         currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
+        currentStage = PlayerPrefs.GetInt("CurrentStage", 1);
         totalStars = PlayerPrefs.GetInt("TotalStars", 0);
         isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
     }
@@ -84,6 +125,7 @@ public class GameManager : MonoBehaviour
     private void SaveData()
     {
         PlayerPrefs.SetInt("CurrentLevel", currentLevel);
+        PlayerPrefs.SetInt("CurrentStage", currentStage);
         PlayerPrefs.SetInt("TotalStars", totalStars);
         PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
         PlayerPrefs.Save();
@@ -98,20 +140,32 @@ public class GameManager : MonoBehaviour
             if (levelLoader.currentLevelData != null)
             {
                 levelTimer = levelLoader.currentLevelData.timeLimit;
+                totalStagesInLevel = levelLoader.currentLevelData.totalStages;
+                LevelLoader.completedBoardsAmount = 0;
+                UpdateStageProgress();
+                UpdateUI();
+                OnBoardsUpdated?.Invoke(LevelLoader.completedBoardsAmount);
+                OnTimerUpdated?.Invoke(levelTimer);
+                isTimerRunning = true;
             }
-            else
-            {
-                levelTimer = 120f; 
+        }
+    }
+    private void CompleteLevelStage()
+    {
+        int totalStages = GetTotalStagesForLevel(currentLevel);
+        if (currentStage < totalStages) {
+            currentStage++;
+            SaveData(); 
+            float progress = (float)(currentStage - 1) / totalStages;
+            OnStageProgressUpdated?.Invoke(progress, totalStages > 1);
+            LoadCurrentLevel();
+        } else {
+            totalStars++;
+            if (uiManager != null) {
+                uiManager.UpdateTotalStars(totalStars);
+                uiManager.ShowLevelCompletePanel();
             }
-            LevelLoader.completedBoardsAmount = 0;
-            if (uiManager != null)
-            {
-                uiManager.UpdateLevelNumber(currentLevel);
-            }
-            
-            OnBoardsUpdated?.Invoke(LevelLoader.completedBoardsAmount);
-            OnTimerUpdated?.Invoke(levelTimer);
-            isTimerRunning = true;
+            SaveData();
         }
     }
     public void OnBoardCompleted()
@@ -119,17 +173,11 @@ public class GameManager : MonoBehaviour
         OnBoardsUpdated?.Invoke(LevelLoader.completedBoardsAmount);
         if (LevelLoader.completedBoardsAmount >= LevelLoader.requiredCompletedBoards)
         {
-            totalStars++;
-            if (uiManager != null)
-            {
-                uiManager.UpdateTotalStars(totalStars);
-                uiManager.ShowLevelCompletePanel();
-            }
             isTimerRunning = false;
-            SaveData();
+            CompleteLevelStage();
         }
     }
-
+    
     public void PauseGame()
     {
         isTimerRunning = false;
@@ -148,6 +196,7 @@ public class GameManager : MonoBehaviour
     public void LoadNextLevel()
     {
         currentLevel++;
+        currentStage = 1;
         SaveData();
         LoadCurrentLevel();
     }
@@ -163,6 +212,8 @@ public class GameManager : MonoBehaviour
         SaveData();
     }
     public int GetCurrentLevel() { return currentLevel; }
+    public int GetCurrentStage() { return currentStage; }
+    public int GetTotalStagesInLevel() { return totalStagesInLevel; }
     public int GetTotalStars() { return totalStars; }
     public bool GetSoundState() { return isSoundOn; }
 }

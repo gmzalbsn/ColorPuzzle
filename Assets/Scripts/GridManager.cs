@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.Events;
 
 [System.Serializable]
 
@@ -118,9 +117,6 @@ public class GridManager : MonoBehaviour
         
         CheckBoardCompletion();
     }
-    // GridManager.cs içindeki CheckBoardCompletion metoduna eklenecek kısım:
-
-    // GridManager.cs içindeki CheckBoardCompletion metoduna eklenecek kod:
 
     private void CheckBoardCompletion()
     {
@@ -142,21 +138,13 @@ public class GridManager : MonoBehaviour
             {
                 if (!isCompleted)
                 {
-                    string color = blockPartsByColor.Keys.First();
                     isCompleted = true;
-                    Debug.Log($"<color=green>BOARD TAMAMLANDI!</color> Board {boardId} tek renk ({color}) ile dolduruldu!");
-                
-                    // Tamamlanma sayacını artır
                     LevelLoader.completedBoardsAmount += 1;
-                    Debug.Log($"Tamamlanan board sayısı: {LevelLoader.completedBoardsAmount}/{LevelLoader.requiredCompletedBoards}");
-                
-                    // GameManager'a bildir
+
                     if (GameManager.Instance != null)
                     {
                         GameManager.Instance.OnBoardCompleted();
                     }
-                
-                    // Blokları sabitle
                     FixAllBlocksOnBoard();
                 }
                 return;
@@ -169,8 +157,7 @@ public class GridManager : MonoBehaviour
             LevelLoader.completedBoardsAmount -= 1;
             if (LevelLoader.completedBoardsAmount < 0)
                 LevelLoader.completedBoardsAmount = 0;
-        
-            // GameManager'a bildir
+            
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnBoardCompleted();

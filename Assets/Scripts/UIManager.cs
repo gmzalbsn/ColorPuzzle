@@ -21,10 +21,15 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Button replayButton;
     [SerializeField] private Button tryAgainButton;
     [SerializeField] private Button nextLevelButton;
+    [SerializeField] private Button resetDataButton;
 
     [Header("Sound Buttons")]
     [SerializeField] private GameObject soundOnImage;
     [SerializeField] private GameObject soundOffImage;
+    
+    [Header("Stage Progress")]
+    [SerializeField] private GameObject stageProgressContainer;
+    [SerializeField] private Image stageProgressFill; 
     
     private GameManager gameManager;
 
@@ -38,10 +43,12 @@ public class UIManager : MonoBehaviour
         InitializeButtons();
         gameManager.OnBoardsUpdated += UpdateBoardsText;
         gameManager.OnTimerUpdated += UpdateTimer;
+        gameManager.OnStageProgressUpdated += UpdateStageProgress; 
         pausePanel.SetActive(false);
         failPanel.SetActive(false);
         levelCompletePanel.SetActive(false);
         UpdateAllUI();
+        
     }
 
     private void InitializeButtons()
@@ -71,7 +78,6 @@ public class UIManager : MonoBehaviour
             HideAllPanels();
         });
         
-        // Sound toggle buttons
         if (soundOnImage != null && soundOffImage != null)
         {
             Button soundOnButton = soundOnImage.GetComponent<Button>();
@@ -83,6 +89,15 @@ public class UIManager : MonoBehaviour
             if (soundOffButton != null)
                 soundOffButton.onClick.AddListener(gameManager.ToggleSound);
         }
+        if (resetDataButton != null)
+        {
+            resetDataButton.onClick.AddListener(() => {
+                if (gameManager != null)
+                {
+                    gameManager.ResetAllData();
+                }
+            });
+        }
     }
 
     private void UpdateAllUI()
@@ -92,6 +107,26 @@ public class UIManager : MonoBehaviour
             UpdateLevelNumber(gameManager.GetCurrentLevel());
             UpdateTotalStars(gameManager.GetTotalStars());
             UpdateSoundButtons(gameManager.GetSoundState());
+            
+            bool hasMultipleStages = gameManager.GetTotalStagesInLevel() > 1;
+            float progress = 0;
+            if (hasMultipleStages)
+            {
+                progress = (float)(gameManager.GetCurrentStage() - 1) / gameManager.GetTotalStagesInLevel();
+            }
+            UpdateStageProgress(progress, hasMultipleStages);
+        }
+    }
+    public void UpdateStageProgress(float progress, bool hasMultipleStages)
+    {
+        if (stageProgressContainer != null)
+        {
+            stageProgressContainer.SetActive(hasMultipleStages);
+        }
+        
+        if (stageProgressFill != null && hasMultipleStages)
+        {
+            stageProgressFill.fillAmount = progress;
         }
     }
     public void UpdateLevelNumber(int level)

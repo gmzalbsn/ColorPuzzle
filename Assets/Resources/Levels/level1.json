@@ -1,9 +1,15 @@
 {
   "levelId": 1,
+  "hasMultipleStages": false,
+  "currentStage": 1,
+  "totalStages": 1,
   "timeLimit": 150,
   "requiredCompletedBoards": 2,
   "boardSpacing": 3,
   "cameraOffset":2.5,
+  "cameraXOffset": 0,  
+  "cameraYOffset": 0.0,
+  "yOffset": 0,
   "boards": [
     {
       "id": "board1",
