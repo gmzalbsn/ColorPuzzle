@@ -6,9 +6,9 @@
   "timeLimit": 150,
   "requiredCompletedBoards": 2,
   "boardSpacing": 3,
-  "cameraOffset":2.5,
-  "cameraXOffset": 0,  
-  "cameraYOffset": 0.0,
+  "cameraOffset":9,
+  "cameraXOffset": 0.5,  
+  "cameraYOffset": 1,
   "yOffset": 0,
   "boards": [
     {

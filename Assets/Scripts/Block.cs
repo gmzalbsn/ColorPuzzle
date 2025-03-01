@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using DG.Tweening;
 
 public class Block : MonoBehaviour
 {
@@ -15,14 +16,26 @@ public class Block : MonoBehaviour
     private Vector3 dragOffset;
     public Vector3 originalPosition;
     private bool isDragging = false;
+    private bool isMoving = false;
+
     public float orginalZOffset=0.005f;
 
     private List<GridCell> occupiedCells = new List<GridCell>();
+    private Sequence currentTweenSequence;
+    [SerializeField] private float snapDuration = 0.3f;
+    [SerializeField] private float returnDuration = 0.25f; 
+    [SerializeField] private float highlightRadius = 0.4f;
+    
+    
     private void Start()
     {
         originalPosition=transform.localPosition;
     }
-
+    
+    public void UpdateOriginalPosition()
+    {
+        originalPosition = transform.localPosition;
+    }
     public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
     {
         blockId = data.id;
@@ -80,6 +93,10 @@ public class Block : MonoBehaviour
     {
         return isFixed;
     }
+    public bool IsMoving()
+    {
+        return isMoving;
+    }
     public void SetFixed(bool fixState)
     {
         isFixed = fixState;
@@ -96,7 +113,9 @@ public class Block : MonoBehaviour
     }
     public void StartDrag()
     {
-        if (isFixed) return;
+        if (isFixed) return; 
+        KillAllTweens();
+        
         GridManager sourceGridManager = null;
         if (occupiedCells.Count > 0 && occupiedCells[0] != null)
         {
@@ -109,6 +128,7 @@ public class Block : MonoBehaviour
         ClearOccupiedCells();
     
         isDragging = true;
+        isMoving = true; 
     }
     public void OnDrag(Vector3 position)
     {
@@ -129,6 +149,99 @@ public class Block : MonoBehaviour
         transform.position = finalPosition;
         UpdateOccupiedCells();
     }
+   public void EndDragWithEffect(Vector3 finalPosition)
+{
+    if (!isDragging || isFixed)
+    {
+        return;
+    }
+    isDragging = false;
+    KillAllTweens();
+    Vector3 currentPos = transform.position;
+    float targetZ = finalPosition.z;
+    
+    Vector2 startXY = new Vector2(currentPos.x, currentPos.y);
+    Vector2 targetXY = new Vector2(finalPosition.x, finalPosition.y);
+    
+    currentTweenSequence = DOTween.Sequence();
+    currentTweenSequence.Append(
+        DOTween.To(() => startXY, newPos => {
+            transform.position = new Vector3(newPos.x, newPos.y, currentPos.z);
+        }, targetXY, snapDuration * 0.85f)
+        .SetEase(Ease.OutBack, 1.2f)  
+        
+    );
+    currentTweenSequence.Append(
+        DOTween.To(() => currentPos.z, newZ => {
+            transform.position = new Vector3(finalPosition.x, finalPosition.y, newZ);
+        }, targetZ, snapDuration * 0.15f)
+        .SetEase(Ease.Linear)
+    );
+    
+    currentTweenSequence.OnComplete(() => {
+        transform.position = finalPosition;
+        UpdateOccupiedCells();
+        currentTweenSequence = null;
+        isMoving = false;
+    });
+}
+public void ReturnToOriginWithEffect(Vector3 originalPos)
+{
+    if (isFixed) return;
+    KillAllTweens();
+    Vector3 currentPos = transform.position;
+    Vector2 startXY = new Vector2(currentPos.x, currentPos.y);
+    Vector2 targetXY = new Vector2(originalPos.x, originalPos.y);
+    
+    float currentZ = currentPos.z;
+    float targetZ = originalPos.z - orginalZOffset;
+    
+    currentTweenSequence = DOTween.Sequence();
+    currentTweenSequence.Append(
+        DOTween.To(() => currentZ, newZ => {
+            transform.position = new Vector3(currentPos.x, currentPos.y, newZ);
+        }, currentZ + 0.2f, returnDuration * 0.2f)
+        .SetEase(Ease.OutQuad)
+    );
+
+    currentTweenSequence.Append(
+        DOTween.To(() => startXY, newPos => {
+            float progress = (newPos.x - startXY.x) / (targetXY.x - startXY.x);
+            if (float.IsNaN(progress)) progress = 0; 
+            float heightOffset = 0.1f * Mathf.Sin(progress * Mathf.PI);
+            
+            transform.position = new Vector3(
+                newPos.x, 
+                newPos.y, 
+                currentZ + 0.2f + heightOffset
+            );
+        }, targetXY, returnDuration * 0.6f)
+        .SetEase(Ease.InOutQuad)
+    );
+    currentTweenSequence.Append(
+        DOTween.To(() => currentZ + 0.2f, newZ => {
+            transform.position = new Vector3(originalPos.x, originalPos.y, newZ);
+        }, targetZ, returnDuration * 0.2f)
+        .SetEase(Ease.OutQuad)
+    );
+    
+    currentTweenSequence.OnComplete(() => {
+        transform.position = new Vector3(originalPos.x, originalPos.y, targetZ);
+        isDragging = false;
+        isMoving = false; 
+        UpdateOccupiedCells();
+        currentTweenSequence = null;
+    });
+}
+    private void KillAllTweens()
+    {
+        if (currentTweenSequence != null)
+        {
+            currentTweenSequence.Kill();
+            currentTweenSequence = null;
+        }
+        DOTween.Kill(transform);
+    }
 
     public int GetBlockPartCount()
     {
@@ -147,31 +260,43 @@ public class Block : MonoBehaviour
                     cell.SetHighlighted(false);
                 }
             }
+            return; 
         }
-        if (highlighted)
+        if (isFixed) return;
+        int highlightedCount = 0;
+        foreach (GameObject part in blockParts)
         {
-            foreach (GameObject part in blockParts)
+            if (part == null) continue;
+        
+            Vector3 partWorldPos = transform.position + part.transform.localPosition;
+            Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, 0.5f);
+            bool foundCell = false;
+        
+            foreach (Collider col in hitColliders)
             {
-                Vector3 partWorldPos = transform.position + part.transform.localPosition;
-                Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, 0.5f);
-                foreach (Collider col in hitColliders)
+                GridCell cell = col.GetComponent<GridCell>();
+                if (cell != null)
                 {
-                    GridCell cell = col.GetComponent<GridCell>();
-                    if (cell != null)
-                    {
-                        cell.SetHighlighted(true);
-                    }
+                    cell.SetHighlighted(true);
+                    highlightedCount++;
+                    break; 
                 }
             }
         }
+        
     }
     private void UpdateOccupiedCells()
     {
         ClearOccupiedCells();
+        
+        if (blockParts.Count == 0) return;
+        
         foreach (GameObject part in blockParts)
         {
+            if (part == null) continue;
+            
             Vector3 partWorldPos = transform.position + part.transform.localPosition;
-            Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, 0.5f);
+            Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, highlightRadius);
             
             foreach (Collider col in hitColliders)
             {
@@ -180,6 +305,7 @@ public class Block : MonoBehaviour
                 {
                     cell.SetOccupied(true, blockColor, this);
                     occupiedCells.Add(cell);
+                    break; 
                 }
             }
         }
@@ -198,6 +324,7 @@ public class Block : MonoBehaviour
     
     private void OnDestroy()
     {
+        DOTween.Kill(transform);
         ClearOccupiedCells();
     }
 }

@@ -1,7 +1,7 @@
+using System.Collections;
 using UnityEngine;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using DG.Tweening;
 
 [System.Serializable]
 public class LevelData
@@ -68,7 +68,14 @@ public class LevelLoader : MonoBehaviour
     public static int requiredCompletedBoards;
     public static int completedBoardsAmount = 0;
     public int levelNumber = 1;
-
+    
+    [SerializeField] private float stageTransitionDelay = 1.0f;
+    [SerializeField] private float stageTransitionDuration = 0.5f;
+    [SerializeField] private Ease stageTransitionEase = Ease.OutQuint;
+    [SerializeField] private float cameraAdjustDelay = 0.2f;
+    
+    private Transform oldStageContainer;
+    private Transform newStageContainer;
     private void Start()
     {
         completedBoardsAmount = 0;
@@ -76,63 +83,189 @@ public class LevelLoader : MonoBehaviour
     }
 
     public void LoadLevelFromFile()
+{
+    int currentStage = 1;
+    GameManager gameManager = GameManager.Instance;
+    if (gameManager != null)
     {
-        int currentStage = 1;
-        GameManager gameManager = GameManager.Instance;
-        if (gameManager != null)
-        {
-            currentStage = gameManager.GetCurrentStage();
-        }
-
-        string resourcePath;
-        int totalStages = gameManager.GetTotalStagesForLevel(levelNumber);
-
-        if (totalStages == 1)
-        {
-            resourcePath = "Levels/level" + levelNumber;
-        }
-        else
-        {
-            resourcePath = "Levels/level" + levelNumber + "_" + currentStage;
-        }
-
-        TextAsset levelTextAsset = Resources.Load<TextAsset>(resourcePath);
-
-        if (levelTextAsset != null)
-        {
-            string jsonText = levelTextAsset.text;
-            currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
-            requiredCompletedBoards = currentLevelData.requiredCompletedBoards;
-            boardSpacing = currentLevelData.boardSpacing;
-            cameraOffset = currentLevelData.cameraOffset;
-
-            CreateBoards();
-        }
-        else
-        {
-            Debug.LogError($"Didn't find json file: {resourcePath}");
-        }
+        currentStage = gameManager.GetCurrentStage();
     }
 
-    private void CreateBoards()
+    string resourcePath;
+    int totalStages = 1;
+    
+    if (gameManager != null)
+    {
+        totalStages = gameManager.GetTotalStagesForLevel(levelNumber);
+    }
+
+    if (totalStages == 1)
+    {
+        resourcePath = "Levels/level" + levelNumber;
+    }
+    else
+    {
+        resourcePath = "Levels/level" + levelNumber + "_" + currentStage;
+    }
+
+    TextAsset levelTextAsset = Resources.Load<TextAsset>(resourcePath);
+
+    if (levelTextAsset != null)
+    {
+        string jsonText = levelTextAsset.text;
+        currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
+        requiredCompletedBoards = currentLevelData.requiredCompletedBoards;
+        boardSpacing = currentLevelData.boardSpacing;
+        cameraOffset = currentLevelData.cameraOffset;
+        bool isRestarting = (gameManager != null && gameManager.isRestarting);
+        
+        if (currentStage > 1 && transform.childCount > 0 && !isRestarting)
+        {
+            PrepareStageTransition();
+        }
+        else
+        {
+            ClearAllExistingBoards();
+            CreateBoards();
+            if (!isRestarting)
+            {
+                ApplyCameraSettingsFromLevelData();
+            }
+            if (isRestarting && gameManager != null)
+            {
+                gameManager.isRestarting = false;
+            }
+        }
+    }
+    else
+    {
+        Debug.LogError($"Didn't find json file: {resourcePath}");
+    }
+}
+    private void PrepareStageTransition()
+    {
+        DOTween.Kill(transform);
+        oldStageContainer = new GameObject("OldStageContainer").transform;
+        oldStageContainer.SetParent(transform.parent);
+        while (transform.childCount > 0)
+        {
+            Transform child = transform.GetChild(0);
+            child.SetParent(oldStageContainer);
+        }
+        newStageContainer = new GameObject("NewStageContainer").transform;
+        newStageContainer.SetParent(transform);
+        
+        float screenWidth = Screen.width / 100f; 
+        newStageContainer.position = new Vector3(screenWidth * 1.2f, 0, 0);
+        
+        CreateBoards(newStageContainer);
+        StartCoroutine(DelayedStageTransition());
+    }
+    private IEnumerator DelayedStageTransition()
+    {
+        yield return new WaitForSeconds(stageTransitionDelay);
+        ClearAllExistingBoards();
+        oldStageContainer = new GameObject("OldStageContainer").transform;
+        oldStageContainer.SetParent(transform.parent);
+        
+        while (transform.childCount > 0)
+        {
+            Transform child = transform.GetChild(0);
+            Vector3 worldPos = child.position;
+            child.SetParent(oldStageContainer);
+            child.position = worldPos; 
+        }
+        
+        newStageContainer = new GameObject("NewStageContainer").transform;
+        newStageContainer.SetParent(transform);
+        
+        float screenWidth = Screen.width / 100f; 
+        newStageContainer.position = new Vector3(screenWidth * 1.2f, 0, 0); 
+        
+        CreateBoards(newStageContainer);
+        
+        yield return new WaitForSeconds(0.1f);
+        
+        AnimateStageTransition();
+        ApplyCameraSettingsFromLevelData();
+
+    }
+    private void ClearAllExistingBoards()
+    {
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+        GameObject oldContainer = GameObject.Find("OldStageContainer");
+        if (oldContainer != null)
+        {
+            Destroy(oldContainer);
+        }
+    
+        GameObject newContainer = GameObject.Find("NewStageContainer");
+        if (newContainer != null)
+        {
+            Destroy(newContainer);
+        }
+        boardManagers.Clear();
+    }
+    private void AnimateStageTransition()
+    {
+        float screenWidth = Screen.width / 100f; 
+        float targetX = 0f; 
+        Sequence transitionSequence = DOTween.Sequence();
+        transitionSequence.Append(oldStageContainer.DOMoveX(-screenWidth * 1.2f, stageTransitionDuration)
+            .SetEase(stageTransitionEase));
+        
+        transitionSequence.Join(newStageContainer.DOMoveX(targetX, stageTransitionDuration)
+            .SetEase(stageTransitionEase));
+        
+        transitionSequence.OnComplete(() => {
+            List<Transform> childrenToMove = new List<Transform>();
+            for (int i = 0; i < newStageContainer.childCount; i++)
+            {
+                childrenToMove.Add(newStageContainer.GetChild(i));
+            }
+    
+            foreach (Transform child in childrenToMove)
+            {
+                Vector3 worldPos = child.position; 
+                child.SetParent(transform); 
+                child.position = worldPos; 
+            }
+            Destroy(oldStageContainer.gameObject);
+            Destroy(newStageContainer.gameObject);
+            
+            StartCoroutine(DelayedCameraAdjust());
+        });
+    }
+    private IEnumerator DelayedCameraAdjust()
+    {
+        yield return new WaitForSeconds(cameraAdjustDelay);
+    }
+   
+     private void CreateBoards(Transform parent = null)
     {
         if (currentLevelData == null || currentLevelData.boards == null)
         {
             return;
         }
-
-        foreach (Transform child in transform)
+        Transform targetParent = parent != null ? parent : transform;
+        if (parent == null)
         {
-            Destroy(child.gameObject);
+            foreach (Transform child in transform)
+            {
+                Destroy(child.gameObject);
+            }
+            boardManagers.Clear();
         }
 
-        boardManagers.Clear();
         Dictionary<string, List<BoardData>> boardsByRow = new Dictionary<string, List<BoardData>>();
         foreach (BoardData board in currentLevelData.boards)
         {
             string rowKey = board.position.Contains("top") ? "top" :
-                board.position.Contains("middle") ? "middle" :
-                board.position.Contains("bottom") ? "bottom" : "middle";
+                           board.position.Contains("middle") ? "middle" :
+                           board.position.Contains("bottom") ? "bottom" : "middle";
 
             if (!boardsByRow.ContainsKey(rowKey))
                 boardsByRow[rowKey] = new List<BoardData>();
@@ -150,7 +283,7 @@ public class LevelLoader : MonoBehaviour
             float currentX = -totalRowWidth / 2;
             foreach (BoardData boardData in rowBoards)
             {
-                GameObject boardObj = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity, transform);
+                GameObject boardObj = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity, targetParent);
                 boardObj.name = boardData.id;
                 GridManager gridManager = boardObj.GetComponentInChildren<GridManager>();
                 gridManager.SetBoardId(boardData.id);
@@ -165,7 +298,7 @@ public class LevelLoader : MonoBehaviour
 
                 boardManagers.Add(gridManager);
                 Vector3 boardPosition = new Vector3(currentX, currentY, 0);
-                boardObj.transform.position = boardPosition;
+                boardObj.transform.localPosition = boardPosition;
                 boardObj.transform.rotation = Quaternion.Euler(-90, 0, 0);
                 if (blockManager != null && boardData.blocks != null && boardData.blocks.Count > 0)
                 {
@@ -177,53 +310,17 @@ public class LevelLoader : MonoBehaviour
 
             currentY -= boardSpacing;
         }
-
-        AdjustCameraToFitAllBoards();
     }
 
-    public void AdjustCameraToFitAllBoards()
+    private void ApplyCameraSettingsFromLevelData()
     {
-        if (mainCamera == null || transform.childCount == 0)
+        if (mainCamera == null || currentLevelData == null)
             return;
-        
-        Bounds bounds = new Bounds();
-        bool boundsInitialized = false;
-
-        foreach (Transform child in transform)
-        {
-            foreach (Transform gridCell in child)
-            {
-                if (!boundsInitialized)
-                {
-                    bounds = new Bounds(gridCell.position, Vector3.zero);
-                    boundsInitialized = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(gridCell.position);
-                }
-            }
-        }
-        
-        bounds.Expand(cameraOffset);
-        float screenRatio = (float)Screen.width / Screen.height;
-        float boundsSize = Mathf.Max(bounds.size.x / screenRatio, bounds.size.z);
-        mainCamera.orthographicSize = boundsSize / 2;
         Vector3 cameraPos = mainCamera.transform.position;
-        cameraPos.x = bounds.center.x;
-        if (currentLevelData != null)
-        {
-            cameraPos.x += currentLevelData.cameraXOffset;
-            cameraPos.y += currentLevelData.cameraYOffset;
-        }
-
+        cameraPos.x = currentLevelData.cameraXOffset;
+        cameraPos.y = currentLevelData.cameraYOffset;
+    
         mainCamera.transform.position = cameraPos;
-
-        Debug.Log(
-            $"Camera position after adjustment: {mainCamera.transform.position}, OrthographicSize: {mainCamera.orthographicSize}");
-        if (currentLevelData != null)
-        {
-            Debug.Log($"Using camera offsets: X={currentLevelData.cameraXOffset}, Y={currentLevelData.cameraYOffset}");
-        }
+        mainCamera.orthographicSize = currentLevelData.cameraOffset;
     }
 }

@@ -49,6 +49,7 @@ public class GridManager : MonoBehaviour
         }
         totalCellCount = gridCells.Count;
     }
+    
     private void CreateCell(int col, int row)
     {
         Vector3 position = new Vector3(col, 0, row);
@@ -63,6 +64,7 @@ public class GridManager : MonoBehaviour
         
         gridCells.Add(new Vector2Int(col, row), cell);
     }
+    
     private void ClearGrid()
     {
         foreach (Transform child in transform)
@@ -97,6 +99,7 @@ public class GridManager : MonoBehaviour
         }
         CheckBoardCompletion();
     }
+    
      public void UpdateOccupiedCell(string color, Vector2Int cellPosition, bool isOccupied)
     {
         if (!occupiedCellsByColor.ContainsKey(color))

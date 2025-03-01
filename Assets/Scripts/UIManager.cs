@@ -29,7 +29,10 @@ public class UIManager : MonoBehaviour
     
     [Header("Stage Progress")]
     [SerializeField] private GameObject stageProgressContainer;
-    [SerializeField] private Image stageProgressFill; 
+    [SerializeField] private Image stageProgressFill;
+    
+    private float progressLerpSpeed = 2f; 
+    private float currentProgress = 0.5f;
     
     private GameManager gameManager;
 
@@ -109,7 +112,7 @@ public class UIManager : MonoBehaviour
             UpdateSoundButtons(gameManager.GetSoundState());
             
             bool hasMultipleStages = gameManager.GetTotalStagesInLevel() > 1;
-            float progress = 0;
+            float progress = 0.5f; 
             if (hasMultipleStages)
             {
                 progress = (float)(gameManager.GetCurrentStage() - 1) / gameManager.GetTotalStagesInLevel();
@@ -124,9 +127,9 @@ public class UIManager : MonoBehaviour
             stageProgressContainer.SetActive(hasMultipleStages);
         }
         
-        if (stageProgressFill != null && hasMultipleStages)
+        if (hasMultipleStages)
         {
-            stageProgressFill.fillAmount = progress;
+            currentProgress = progress == 0 ? 0.5f : 1f;
         }
     }
     public void UpdateLevelNumber(int level)
@@ -154,7 +157,13 @@ public class UIManager : MonoBehaviour
             timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
         }
     }
-
+    private void Update()
+    {
+        if (stageProgressFill != null)
+        {
+            stageProgressFill.fillAmount = Mathf.Lerp(stageProgressFill.fillAmount, currentProgress, Time.deltaTime * progressLerpSpeed);
+        }
+    }
     public void UpdateTotalStars(int stars)
     {
         if (totalStarsText != null)
