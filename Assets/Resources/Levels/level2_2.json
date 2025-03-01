@@ -4,7 +4,7 @@
   "currentStage": 2,
   "totalStages": 2,
   "timeLimit": 360,
-  "requiredCompletedBoards": 2,
+  "requiredCompletedBoards": 4,
   "boardSpacing": 6,
   "cameraOffset": 10,
   "cameraXOffset": 1, 

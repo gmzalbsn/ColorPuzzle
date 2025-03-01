@@ -6,9 +6,8 @@ using DG.Tweening;
 [System.Serializable]
 public class LevelData
 {
-    public int levelId;
-    public bool hasMultipleStages = false; // Çoklu aşama var mı?
-    public int currentStage = 1; // Mevcut aşama numarası
+    public bool hasMultipleStages = false; 
+    public int currentStage = 1; 
     public int totalStages = 1;
     public int timeLimit;
     public int requiredCompletedBoards;
@@ -59,7 +58,6 @@ public class LevelLoader : MonoBehaviour
 {
     [SerializeField] private GameObject boardPrefab;
     [SerializeField] private float boardSpacing = 4f;
-    [SerializeField] private float cameraOffset = 4f;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private BlockManager blockManager;
     private string levelFolderPath = "Assets/Scripts/LevelJson";
@@ -116,7 +114,6 @@ public class LevelLoader : MonoBehaviour
         currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
         requiredCompletedBoards = currentLevelData.requiredCompletedBoards;
         boardSpacing = currentLevelData.boardSpacing;
-        cameraOffset = currentLevelData.cameraOffset;
         bool isRestarting = (gameManager != null && gameManager.isRestarting);
         
         if (currentStage > 1 && transform.childCount > 0 && !isRestarting)
@@ -235,9 +232,24 @@ public class LevelLoader : MonoBehaviour
             }
             Destroy(oldStageContainer.gameObject);
             Destroy(newStageContainer.gameObject);
-            
+            StartCoroutine(UpdateAllBlocksPositionsDelayed());
             StartCoroutine(DelayedCameraAdjust());
         });
+    }
+    private IEnumerator UpdateAllBlocksPositionsDelayed()
+    {
+        yield return new WaitForSeconds(0.3f);
+        foreach (Transform boardObj in transform)
+        {
+            Block[] blocks = boardObj.GetComponentsInChildren<Block>();
+            foreach (Block block in blocks)
+            {
+                if (block != null)
+                {
+                    block.UpdateOriginalPosition();
+                }
+            }
+        }
     }
     private IEnumerator DelayedCameraAdjust()
     {

@@ -37,7 +37,8 @@ public class GridCell : MonoBehaviour
     }
     public void SetOccupied(bool occupied, string color, Block block)
     {
-        if (isOccupied != occupied || occupiedByColor != color)
+        bool wasOccupied = isOccupied;
+        if (isOccupied != occupied || occupiedByColor != color || occupiedByBlock != block)
         {
             if (isOccupied && !string.IsNullOrEmpty(occupiedByColor))
             {
@@ -47,7 +48,6 @@ public class GridCell : MonoBehaviour
                     gridManager.UpdateOccupiedCell(occupiedByColor, coordinates, false);
                 }
             }
-            
             isOccupied = occupied;
             occupiedByColor = occupied ? color : "";
             occupiedByBlock = occupied ? block : null;
@@ -59,6 +59,10 @@ public class GridCell : MonoBehaviour
                 {
                     gridManager.UpdateOccupiedCell(color, coordinates, true);
                 }
+            }
+            if (wasOccupied && !occupied)
+            {
+                SetHighlighted(false);
             }
         }
     }

@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
     private int currentLevel = 1;
+    private int currentStageStars = 0;
     private int totalStars = 0;
     private float levelTimer = 0;
     private bool isTimerRunning = false;
@@ -131,15 +132,15 @@ public class GameManager : MonoBehaviour
     private void LoadSavedData()
     {
         currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
-        currentStage = PlayerPrefs.GetInt("CurrentStage", 1);
+        currentStage = 1; 
         totalStars = PlayerPrefs.GetInt("TotalStars", 0);
         isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
+    
+        Debug.Log($"Loaded data: Level={currentLevel}, Stage=1 (reset to beginning)");
     }
-
     private void SaveData()
     {
         PlayerPrefs.SetInt("CurrentLevel", currentLevel);
-        PlayerPrefs.SetInt("CurrentStage", currentStage);
         PlayerPrefs.SetInt("TotalStars", totalStars);
         PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
         PlayerPrefs.Save();
@@ -157,9 +158,11 @@ public class GameManager : MonoBehaviour
                 {
                     initialLevelTimer = levelLoader.currentLevelData.timeLimit;
                     levelTimer = initialLevelTimer;
+                    currentStageStars = 0;
+                    LevelLoader.completedBoardsAmount = 0;
                 }
                 totalStagesInLevel = levelLoader.currentLevelData.totalStages;
-                LevelLoader.completedBoardsAmount = 0;
+            
                 UpdateStageProgress();
                 UpdateUI();
                 OnBoardsUpdated?.Invoke(LevelLoader.completedBoardsAmount);
@@ -171,19 +174,17 @@ public class GameManager : MonoBehaviour
     private void CompleteLevelStage()
     {
         int totalStages = GetTotalStagesForLevel(currentLevel);
-        totalStars += LevelLoader.completedBoardsAmount;
-    
+        currentStageStars = LevelLoader.completedBoardsAmount;
         if (currentStage < totalStages) {
             isTimerRunning = false;
-        
             currentStage++;
-            SaveData(); 
             float progress = (float)(currentStage - 1) / totalStages;
             OnStageProgressUpdated?.Invoke(progress, totalStages > 1);
             LoadCurrentLevel();
-            StartCoroutine(ResumeTimerAfterDelay(1.5f)); 
+            StartCoroutine(ResumeTimerAfterDelay(1.5f));
         } else {
             if (uiManager != null) {
+                totalStars += currentStageStars;
                 uiManager.UpdateTotalStars(totalStars);
                 uiManager.ShowLevelCompletePanel();
             }
@@ -219,6 +220,8 @@ public class GameManager : MonoBehaviour
     {
         levelTimer = initialLevelTimer;
         isRestarting = true;
+        currentStageStars = 0;
+        LevelLoader.completedBoardsAmount = 0;
         LoadCurrentLevel();
     }
 

@@ -29,12 +29,12 @@ public class Block : MonoBehaviour
     
     private void Start()
     {
-        originalPosition=transform.localPosition;
+        UpdateOriginalPosition();
     }
     
     public void UpdateOriginalPosition()
     {
-        originalPosition = transform.localPosition;
+        originalPosition = transform.position;
     }
     public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
     {
@@ -66,6 +66,7 @@ public class Block : MonoBehaviour
         {
             UpdateOccupiedCells();
         }
+        Invoke("UpdateOriginalPosition", 0.1f);
     }
     private void RecalculatePosition()
     {
@@ -115,16 +116,6 @@ public class Block : MonoBehaviour
     {
         if (isFixed) return; 
         KillAllTweens();
-        
-        GridManager sourceGridManager = null;
-        if (occupiedCells.Count > 0 && occupiedCells[0] != null)
-        {
-            sourceGridManager = occupiedCells[0].GetComponentInParent<GridManager>();
-            if (sourceGridManager != null)
-            {
-                sourceGridManager.RegisterBlockParts(blockColor, -blockParts.Count);
-            }
-        }
         ClearOccupiedCells();
     
         isDragging = true;
@@ -148,91 +139,99 @@ public class Block : MonoBehaviour
         finalPosition.z = originalPosition.z - orginalZOffset;
         transform.position = finalPosition;
         UpdateOccupiedCells();
-    }
-   public void EndDragWithEffect(Vector3 finalPosition)
-{
-    if (!isDragging || isFixed)
-    {
-        return;
-    }
-    isDragging = false;
-    KillAllTweens();
-    Vector3 currentPos = transform.position;
-    float targetZ = finalPosition.z;
-    
-    Vector2 startXY = new Vector2(currentPos.x, currentPos.y);
-    Vector2 targetXY = new Vector2(finalPosition.x, finalPosition.y);
-    
-    currentTweenSequence = DOTween.Sequence();
-    currentTweenSequence.Append(
-        DOTween.To(() => startXY, newPos => {
-            transform.position = new Vector3(newPos.x, newPos.y, currentPos.z);
-        }, targetXY, snapDuration * 0.85f)
-        .SetEase(Ease.OutBack, 1.2f)  
-        
-    );
-    currentTweenSequence.Append(
-        DOTween.To(() => currentPos.z, newZ => {
-            transform.position = new Vector3(finalPosition.x, finalPosition.y, newZ);
-        }, targetZ, snapDuration * 0.15f)
-        .SetEase(Ease.Linear)
-    );
-    
-    currentTweenSequence.OnComplete(() => {
-        transform.position = finalPosition;
-        UpdateOccupiedCells();
-        currentTweenSequence = null;
         isMoving = false;
-    });
-}
-public void ReturnToOriginWithEffect(Vector3 originalPos)
-{
-    if (isFixed) return;
-    KillAllTweens();
-    Vector3 currentPos = transform.position;
-    Vector2 startXY = new Vector2(currentPos.x, currentPos.y);
-    Vector2 targetXY = new Vector2(originalPos.x, originalPos.y);
-    
-    float currentZ = currentPos.z;
-    float targetZ = originalPos.z - orginalZOffset;
-    
-    currentTweenSequence = DOTween.Sequence();
-    currentTweenSequence.Append(
-        DOTween.To(() => currentZ, newZ => {
-            transform.position = new Vector3(currentPos.x, currentPos.y, newZ);
-        }, currentZ + 0.2f, returnDuration * 0.2f)
-        .SetEase(Ease.OutQuad)
-    );
-
-    currentTweenSequence.Append(
-        DOTween.To(() => startXY, newPos => {
-            float progress = (newPos.x - startXY.x) / (targetXY.x - startXY.x);
-            if (float.IsNaN(progress)) progress = 0; 
-            float heightOffset = 0.1f * Mathf.Sin(progress * Mathf.PI);
-            
-            transform.position = new Vector3(
-                newPos.x, 
-                newPos.y, 
-                currentZ + 0.2f + heightOffset
-            );
-        }, targetXY, returnDuration * 0.6f)
-        .SetEase(Ease.InOutQuad)
-    );
-    currentTweenSequence.Append(
-        DOTween.To(() => currentZ + 0.2f, newZ => {
-            transform.position = new Vector3(originalPos.x, originalPos.y, newZ);
-        }, targetZ, returnDuration * 0.2f)
-        .SetEase(Ease.OutQuad)
-    );
-    
-    currentTweenSequence.OnComplete(() => {
-        transform.position = new Vector3(originalPos.x, originalPos.y, targetZ);
+        
+    }
+    public void EndDragWithEffect(Vector3 finalPosition)
+    {
+        if (!isDragging || isFixed)
+        {
+            return;
+        }
         isDragging = false;
-        isMoving = false; 
-        UpdateOccupiedCells();
-        currentTweenSequence = null;
-    });
-}
+        KillAllTweens();
+        Vector3 currentPos = transform.position;
+        float targetZ = finalPosition.z;
+    
+        Vector2 startXY = new Vector2(currentPos.x, currentPos.y);
+        Vector2 targetXY = new Vector2(finalPosition.x, finalPosition.y);
+    
+        currentTweenSequence = DOTween.Sequence();
+        currentTweenSequence.Append(
+            DOTween.To(() => startXY, newPos => {
+                    transform.position = new Vector3(newPos.x, newPos.y, currentPos.z);
+                }, targetXY, snapDuration * 0.85f)
+                .SetEase(Ease.OutBack, 1.2f)  
+        
+        );
+        currentTweenSequence.Append(
+            DOTween.To(() => currentPos.z, newZ => {
+                    transform.position = new Vector3(finalPosition.x, finalPosition.y, newZ);
+                }, targetZ, snapDuration * 0.15f)
+                .SetEase(Ease.Linear)
+        );
+    
+        currentTweenSequence.OnComplete(() => {
+            transform.position = finalPosition;
+            
+            UpdateOccupiedCells();
+        
+            currentTweenSequence = null;
+            isMoving = false;
+        });
+    }
+
+    public void ReturnToOriginWithEffect(Vector3 originalPos)
+    {
+        if (isFixed) return;
+        KillAllTweens();
+        Vector3 currentPos = transform.position;
+        Vector2 startXY = new Vector2(currentPos.x, currentPos.y);
+        Vector2 targetXY = new Vector2(originalPos.x, originalPos.y);
+    
+        float currentZ = currentPos.z;
+        float targetZ = originalPos.z - orginalZOffset;
+    
+        currentTweenSequence = DOTween.Sequence();
+        currentTweenSequence.Append(
+            DOTween.To(() => currentZ, newZ => {
+                    transform.position = new Vector3(currentPos.x, currentPos.y, newZ);
+                }, currentZ + 0.2f, returnDuration * 0.2f)
+                .SetEase(Ease.OutQuad)
+        );
+
+        currentTweenSequence.Append(
+            DOTween.To(() => startXY, newPos => {
+                    float progress = (newPos.x - startXY.x) / (targetXY.x - startXY.x);
+                    if (float.IsNaN(progress)) progress = 0; 
+                    float heightOffset = 0.1f * Mathf.Sin(progress * Mathf.PI);
+            
+                    transform.position = new Vector3(
+                        newPos.x, 
+                        newPos.y, 
+                        currentZ + 0.2f + heightOffset
+                    );
+                }, targetXY, returnDuration * 0.6f)
+                .SetEase(Ease.InOutQuad)
+        );
+        currentTweenSequence.Append(
+            DOTween.To(() => currentZ + 0.2f, newZ => {
+                    transform.position = new Vector3(originalPos.x, originalPos.y, newZ);
+                }, targetZ, returnDuration * 0.2f)
+                .SetEase(Ease.OutQuad)
+        );
+    
+        currentTweenSequence.OnComplete(() => {
+            transform.position = new Vector3(originalPos.x, originalPos.y, targetZ);
+            isDragging = false;
+            isMoving = false; 
+        
+            // İşgal edilen hücreleri güncelle
+            UpdateOccupiedCells();
+        
+            currentTweenSequence = null;
+        });
+    }
     private void KillAllTweens()
     {
         if (currentTweenSequence != null)
@@ -247,66 +246,94 @@ public void ReturnToOriginWithEffect(Vector3 originalPos)
     {
         return blockParts.Count;
     }
-    public void HighlightGridCells(bool highlighted)
+   public void HighlightGridCells(bool highlighted)
+{
+    GridCell[] allCellsInScene = FindObjectsOfType<GridCell>();
+    foreach (GridCell cell in allCellsInScene)
     {
-        if (!highlighted)
-        {
-            Collider[] allGridCells = Physics.OverlapSphere(transform.position, 30f);
-            foreach (Collider col in allGridCells)
-            {
-                GridCell cell = col.GetComponent<GridCell>();
-                if (cell != null)
-                {
-                    cell.SetHighlighted(false);
-                }
-            }
-            return; 
-        }
-        if (isFixed) return;
-        int highlightedCount = 0;
-        foreach (GameObject part in blockParts)
-        {
-            if (part == null) continue;
-        
-            Vector3 partWorldPos = transform.position + part.transform.localPosition;
-            Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, 0.5f);
-            bool foundCell = false;
-        
-            foreach (Collider col in hitColliders)
-            {
-                GridCell cell = col.GetComponent<GridCell>();
-                if (cell != null)
-                {
-                    cell.SetHighlighted(true);
-                    highlightedCount++;
-                    break; 
-                }
-            }
-        }
-        
+        cell.SetHighlighted(false);
     }
-    private void UpdateOccupiedCells()
+    if (!highlighted || isFixed)
+    {
+        return;
+    }
+    List<GridCell> cellsToHighlight = new List<GridCell>();
+    
+    foreach (GameObject part in blockParts)
+    {
+        if (part == null) continue;
+        Vector3 partWorldPos = transform.position + part.transform.localPosition;
+        GridCell bestCell = null;
+        float bestDistance = float.MaxValue;
+        
+        for (float radius = 0.5f; radius <= 2.0f; radius += 0.5f)
+        {
+            Collider[] nearCells = Physics.OverlapSphere(partWorldPos, radius);
+            
+            foreach (Collider col in nearCells)
+            {
+                GridCell cell = col.GetComponent<GridCell>();
+                if (cell != null)
+                {
+                    if (cellsToHighlight.Contains(cell))
+                    {
+                        continue;
+                    }
+                    
+                    float distance = Vector3.Distance(partWorldPos, cell.transform.position);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestCell = cell;
+                    }
+                }
+            }
+            if (bestCell != null)
+            {
+                break;
+            }
+        }
+        if (bestCell != null && !cellsToHighlight.Contains(bestCell))
+        {
+            bestCell.SetHighlighted(true);
+            cellsToHighlight.Add(bestCell);
+        }
+    }
+}
+    public void UpdateOccupiedCells()
     {
         ClearOccupiedCells();
-        
+    
         if (blockParts.Count == 0) return;
-        
+        int cellsFound = 0;
+    
         foreach (GameObject part in blockParts)
         {
             if (part == null) continue;
-            
+        
             Vector3 partWorldPos = transform.position + part.transform.localPosition;
             Collider[] hitColliders = Physics.OverlapSphere(partWorldPos, highlightRadius);
-            
+            GridCell closestCell = null;
+            float closestDistance = float.MaxValue;
+        
             foreach (Collider col in hitColliders)
             {
                 GridCell cell = col.GetComponent<GridCell>();
                 if (cell != null)
                 {
-                    cell.SetOccupied(true, blockColor, this);
-                    occupiedCells.Add(cell);
-                    break; 
+                    float distance = Vector3.Distance(partWorldPos, cell.transform.position);
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestCell = cell;
+                    }
                 }
+            }
+            if (closestCell != null)
+            {
+                closestCell.SetOccupied(true, blockColor, this);
+                occupiedCells.Add(closestCell);
+                cellsFound++;
             }
         }
     }

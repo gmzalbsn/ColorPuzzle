@@ -31,7 +31,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject stageProgressContainer;
     [SerializeField] private Image stageProgressFill;
     
-    private float progressLerpSpeed = 2f; 
+    private float progressLerpSpeed = 3f; 
     private float currentProgress = 0.5f;
     
     private GameManager gameManager;

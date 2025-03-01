@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2588990353957038169}
   m_Layer: 0
   m_Name: BoardPrefab
-  m_TagString: Untagged
+  m_TagString: Board
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -46,3 +46,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridCellPrefab: {fileID: 5281904762983967142, guid: 087c8421c7beab44ca24dc535fc65882, type: 3}
   cellSpacing: 1
+  boardId: 

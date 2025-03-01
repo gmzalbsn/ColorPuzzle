@@ -19,6 +19,11 @@ public class GridManager : MonoBehaviour
     public void SetBoardId(string id) { boardId = id; }
     public int GetTotalCellCount() { return totalCellCount; }
     public bool IsCompleted() { return isCompleted; }
+    
+    public Dictionary<Vector2Int, GridCell> GetAllCells()
+    {
+        return gridCells;
+    }
     public void CreateGrid(int rows, int columns)
     {
         ClearGrid(); 
@@ -209,4 +214,103 @@ public class GridManager : MonoBehaviour
             }
         }
     }
+    public void ResetAllCells()
+{
+    Debug.Log($"GridManager {boardId}: Resetting all cells...");
+    
+    // Tüm işgal edilen hücreleri temizle ANCAK bundan önce registeredBlocks'u güncelle
+    // yoksa sayılar birbirini tutmaz
+    HashSet<Block> uniqueBlocks = new HashSet<Block>();
+    
+    foreach (var cellEntry in gridCells)
+    {
+        GridCell cell = cellEntry.Value;
+        
+        // Sadece işgal edilmiş hücreleri kontrol et
+        if (cell.isOccupied && !string.IsNullOrEmpty(cell.occupiedByColor) && cell.occupiedByBlock != null)
+        {
+            // İşgal eden bloku kaydet
+            uniqueBlocks.Add(cell.occupiedByBlock);
+            
+            // İşgal durumunu temizle
+            cell.SetOccupied(false, "", null);
+        }
+        
+        // Highlight durumunu temizle
+        cell.SetHighlighted(false);
+    }
+    
+    // Her blok için tekrar hücrelerin işgal durumunu güncelle
+    foreach (Block block in uniqueBlocks)
+    {
+        // Blokun orijinal pozisyonunu korumasını sağla
+        Vector3 originalPos = block.originalPosition;
+        
+        // Bloğun işgal ettiği hücreleri güncelle
+        block.UpdateOccupiedCells();
+        
+        // Orijinal pozisyonu koru (UpdateOccupiedCells bunu değiştirmiş olabilir)
+        block.originalPosition = originalPos;
+    }
+    
+    // blockPartsByColor ve occupiedCellsByColor dictionary'lerini yeniden hesapla
+    RecalculateBlocksAndCells();
+    
+    Debug.Log($"GridManager {boardId}: All cells reset completed.");
+}
+
+// GridManager sınıfına yeni bir yardımcı metod ekle
+private void RecalculateBlocksAndCells()
+{
+    // Dictionary'leri temizle
+    blockPartsByColor.Clear();
+    occupiedCellsByColor.Clear();
+    
+    // Tüm hücreleri dolaş ve işgal durumunu kaydet
+    foreach (var cellEntry in gridCells)
+    {
+        GridCell cell = cellEntry.Value;
+        if (cell.isOccupied && !string.IsNullOrEmpty(cell.occupiedByColor))
+        {
+            // Bu renk için bir giriş yoksa oluştur
+            if (!occupiedCellsByColor.ContainsKey(cell.occupiedByColor))
+            {
+                occupiedCellsByColor[cell.occupiedByColor] = 0;
+            }
+            
+            // İşgal edilen hücre sayısını artır
+            occupiedCellsByColor[cell.occupiedByColor]++;
+        }
+    }
+    
+    // Bloklardan gelen parça bilgilerini kaydet
+    HashSet<Block> uniqueBlocks = new HashSet<Block>();
+    foreach (var cellEntry in gridCells)
+    {
+        GridCell cell = cellEntry.Value;
+        if (cell.isOccupied && cell.occupiedByBlock != null)
+        {
+            uniqueBlocks.Add(cell.occupiedByBlock);
+        }
+    }
+    
+    // Her blok için parça sayısını kaydet
+    foreach (Block block in uniqueBlocks)
+    {
+        string blockColor = block.GetColor();
+        int blockPartCount = block.GetBlockPartCount();
+        
+        if (!blockPartsByColor.ContainsKey(blockColor))
+        {
+            blockPartsByColor[blockColor] = 0;
+        }
+        
+        blockPartsByColor[blockColor] += blockPartCount;
+    }
+    
+    Debug.Log($"GridManager {boardId}: Recalculated blocks and cells - Block parts: {blockPartsByColor.Count} colors, Occupied cells: {occupiedCellsByColor.Count} colors");
+    
+    // Board tamamlanma durumunu kontrol et
+    CheckBoardCompletion();
+}
 }
