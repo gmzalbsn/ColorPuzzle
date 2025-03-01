@@ -185,7 +185,7 @@ public class Block : MonoBehaviour
         currentTweenSequence.OnComplete(() =>
         {
             transform.position = finalPosition;
-
+            AudioManager.Instance.PlayPiecePlacedSound();
             UpdateOccupiedCells();
 
             currentTweenSequence = null;
@@ -236,6 +236,7 @@ public class Block : MonoBehaviour
         currentTweenSequence.OnComplete(() =>
         {
             transform.position = new Vector3(originalPos.x, originalPos.y, targetZ);
+            AudioManager.Instance.PlayPieceReturnSound();
             isDragging = false;
             isMoving = false;
 
@@ -274,7 +275,7 @@ public class Block : MonoBehaviour
             return;
         }
 
-        float searchRadius = blockParts.Count <= 6 ? 1.8f : 1.1f;
+        float searchRadius = blockParts.Count <= 6 ? 1.5f : 1.1f;
 
         GridManager nearestGridManager = FindNearestGridManager();
         if (nearestGridManager == null)

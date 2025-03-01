@@ -174,6 +174,7 @@ public class GridManager : MonoBehaviour
                     isCompleted = true;
                     LevelLoader.completedBoardsAmount += 1;
                     SpawnCompletionEffect();
+                    AudioManager.Instance.PlayBlockCompletedSound();
 
                     if (GameManager.Instance != null)
                     {

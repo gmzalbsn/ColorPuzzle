@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -63,30 +64,35 @@ public class UIManager : MonoBehaviour
     {
         pauseButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlayUIButtonSound();
             gameManager.PauseGame();
             pausePanel.SetActive(true);
         });
 
         continueButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlayUIButtonSound();
             gameManager.ResumeGame();
             pausePanel.SetActive(false);
         });
 
         replayButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlayUIButtonSound();
             gameManager.RestartLevel();
             HideAllPanels();
         });
 
         tryAgainButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlayUIButtonSound();
             gameManager.RestartLevel();
             HideAllPanels();
         });
 
         nextLevelButton.onClick.AddListener(() =>
         {
+            AudioManager.Instance.PlayUIButtonSound();
             gameManager.LoadNextLevel();
             HideAllPanels();
         });
@@ -107,6 +113,7 @@ public class UIManager : MonoBehaviour
         {
             resetDataButton.onClick.AddListener(() =>
             {
+                AudioManager.Instance.PlayUIButtonSound();
                 if (gameManager != null)
                 {
                     gameManager.ResetAllData();
@@ -203,7 +210,9 @@ public class UIManager : MonoBehaviour
     {
         if (levelCompletePanel != null)
         {
-            levelCompletePanel.SetActive(true);
+            DOVirtual.DelayedCall(1f,()=>levelCompletePanel.SetActive(true));
+            
+            AudioManager.Instance.PlayLevelWinSound();
         }
     }
 
@@ -212,6 +221,7 @@ public class UIManager : MonoBehaviour
         if (failPanel != null)
         {
             failPanel.SetActive(true);
+            AudioManager.Instance.PlayLevelFailSound();
         }
     }
 

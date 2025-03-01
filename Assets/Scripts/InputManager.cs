@@ -339,7 +339,6 @@ public class InputManager : MonoBehaviour
 
         Vector3 originalPos = selectedBlock.originalPosition;
         selectedBlock.EndDragSimple(originalPos);
-
         if (sourceGridManager != null && blockColor != null && blockPartCount > 0)
         {
             sourceGridManager.RegisterBlockParts(blockColor, blockPartCount);

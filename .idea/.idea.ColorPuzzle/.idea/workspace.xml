@@ -17,6 +17,7 @@
     <setting file="file://$USER_HOME$/Desktop/Block.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/Desktop/InputManager.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/Desktop/LevelLoader.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Scripts/AudioManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/GameManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/LevelManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/UIManager.cs" root0="FORCE_HIGHLIGHTING" />
@@ -102,7 +103,7 @@
       <workItem from="1740771070113" duration="3625000" />
       <workItem from="1740816472324" duration="7618000" />
       <workItem from="1740829784624" duration="10617000" />
-      <workItem from="1740843052669" duration="10501000" />
+      <workItem from="1740843052669" duration="18632000" />
     </task>
     <servers />
   </component>

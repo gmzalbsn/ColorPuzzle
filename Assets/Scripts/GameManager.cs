@@ -268,6 +268,7 @@ public class GameManager : MonoBehaviour
         AudioListener.volume = isSoundOn ? 1f : 0f;
         if (uiManager != null)
         {
+            AudioManager.Instance.ToggleSound();
             uiManager.UpdateSoundButtons(isSoundOn);
         }
 

@@ -5,7 +5,7 @@
   "totalStages": 2,
   "timeLimit": 360,
   "requiredCompletedBoards": 4,
-  "boardSpacing": 6,
+  "boardSpacing": 7,
   "cameraOffset": 10,
   "cameraXOffset": 1, 
   "cameraYOffset": 2,
@@ -89,11 +89,13 @@
           "color": "green",
           "isFixed": false,
           "parts": [
-            {"gridX": 0, "gridY": 3},
-            {"gridX": 1, "gridY": 4},
-            {"gridX": 2, "gridY": 3},
+           
             {"gridX": 0, "gridY": 4},
-            {"gridX": 2, "gridY": 4}
+            {"gridX": 1, "gridY": 4},
+            {"gridX": 2, "gridY": 4},
+            {"gridX": 0, "gridY": 3},
+            {"gridX": 2, "gridY": 3}
+           
           ]
         }
       ]
@@ -110,11 +112,11 @@
           "color": "red",
           "isFixed": false,
           "parts": [
-            {"gridX": 0, "gridY": 3},
-            {"gridX": 1, "gridY": 4},
-            {"gridX": 2, "gridY": 3},
             {"gridX": 0, "gridY": 4},
-            {"gridX": 2, "gridY": 4}
+            {"gridX": 1, "gridY": 4},
+            {"gridX": 2, "gridY": 4},
+            {"gridX": 0, "gridY": 3},
+            {"gridX": 2, "gridY": 3}
           ]
         }
       ]
