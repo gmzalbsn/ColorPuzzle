@@ -10,7 +10,7 @@ public class GridCell : MonoBehaviour
     public bool isOccupied = false;
     public string occupiedByColor = "";
     public Block occupiedByBlock = null;
-    
+
     public void Initialize(Vector2Int coords)
     {
         coordinates = coords;
@@ -18,23 +18,27 @@ public class GridCell : MonoBehaviour
             meshRenderer = GetComponentInChildren<MeshRenderer>();
         SetHighlighted(false);
     }
+
     public Vector3 GetWorldPosition()
     {
         return transform.position;
     }
+
     public void SetHighlighted(bool highlighted)
     {
         isHighlighted = highlighted;
-    
+
         if (meshRenderer != null)
         {
             meshRenderer.material.color = highlighted ? highlightColor : normalColor;
         }
     }
+
     public bool IsHighlighted()
     {
         return isHighlighted;
     }
+
     public void SetOccupied(bool occupied, string color, Block block)
     {
         bool wasOccupied = isOccupied;
@@ -48,10 +52,11 @@ public class GridCell : MonoBehaviour
                     gridManager.UpdateOccupiedCell(occupiedByColor, coordinates, false);
                 }
             }
+
             isOccupied = occupied;
             occupiedByColor = occupied ? color : "";
             occupiedByBlock = occupied ? block : null;
-            
+
             if (occupied && !string.IsNullOrEmpty(color))
             {
                 GridManager gridManager = GetComponentInParent<GridManager>();
@@ -60,6 +65,7 @@ public class GridCell : MonoBehaviour
                     gridManager.UpdateOccupiedCell(color, coordinates, true);
                 }
             }
+
             if (wasOccupied && !occupied)
             {
                 SetHighlighted(false);

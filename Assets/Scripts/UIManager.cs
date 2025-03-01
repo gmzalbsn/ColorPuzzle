@@ -4,36 +4,41 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    [Header("UI Elements - Texts")]
-    [SerializeField] private TextMeshProUGUI levelNumberText;
+    [Header("UI Elements - Texts")] [SerializeField]
+    private TextMeshProUGUI levelNumberText;
+
     [SerializeField] private TextMeshProUGUI completedBoardsText;
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI totalStarsText;
 
-    [Header("UI Elements - Panels")]
-    [SerializeField] private GameObject pausePanel;
+    [Header("UI Elements - Panels")] [SerializeField]
+    private GameObject pausePanel;
+
     [SerializeField] private GameObject failPanel;
     [SerializeField] private GameObject levelCompletePanel;
 
-    [Header("UI Elements - Buttons")]
-    [SerializeField] private Button pauseButton;
+    [Header("UI Elements - Buttons")] [SerializeField]
+    private Button pauseButton;
+
     [SerializeField] private Button continueButton;
     [SerializeField] private Button replayButton;
     [SerializeField] private Button tryAgainButton;
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button resetDataButton;
 
-    [Header("Sound Buttons")]
-    [SerializeField] private GameObject soundOnImage;
+    [Header("Sound Buttons")] [SerializeField]
+    private GameObject soundOnImage;
+
     [SerializeField] private GameObject soundOffImage;
-    
-    [Header("Stage Progress")]
-    [SerializeField] private GameObject stageProgressContainer;
+
+    [Header("Stage Progress")] [SerializeField]
+    private GameObject stageProgressContainer;
+
     [SerializeField] private Image stageProgressFill;
-    
-    private float progressLerpSpeed = 3f; 
+
+    private float progressLerpSpeed = 3f;
     private float currentProgress = 0.5f;
-    
+
     private GameManager gameManager;
 
     private void Start()
@@ -43,58 +48,65 @@ public class UIManager : MonoBehaviour
         {
             return;
         }
+
         InitializeButtons();
         gameManager.OnBoardsUpdated += UpdateBoardsText;
         gameManager.OnTimerUpdated += UpdateTimer;
-        gameManager.OnStageProgressUpdated += UpdateStageProgress; 
+        gameManager.OnStageProgressUpdated += UpdateStageProgress;
         pausePanel.SetActive(false);
         failPanel.SetActive(false);
         levelCompletePanel.SetActive(false);
         UpdateAllUI();
-        
     }
 
     private void InitializeButtons()
     {
-        pauseButton.onClick.AddListener(() => {
+        pauseButton.onClick.AddListener(() =>
+        {
             gameManager.PauseGame();
             pausePanel.SetActive(true);
         });
-        
-        continueButton.onClick.AddListener(() => {
+
+        continueButton.onClick.AddListener(() =>
+        {
             gameManager.ResumeGame();
             pausePanel.SetActive(false);
         });
-        
-        replayButton.onClick.AddListener(() => {
+
+        replayButton.onClick.AddListener(() =>
+        {
             gameManager.RestartLevel();
             HideAllPanels();
         });
-        
-        tryAgainButton.onClick.AddListener(() => {
+
+        tryAgainButton.onClick.AddListener(() =>
+        {
             gameManager.RestartLevel();
             HideAllPanels();
         });
-        
-        nextLevelButton.onClick.AddListener(() => {
+
+        nextLevelButton.onClick.AddListener(() =>
+        {
             gameManager.LoadNextLevel();
             HideAllPanels();
         });
-        
+
         if (soundOnImage != null && soundOffImage != null)
         {
             Button soundOnButton = soundOnImage.GetComponent<Button>();
             Button soundOffButton = soundOffImage.GetComponent<Button>();
-            
+
             if (soundOnButton != null)
                 soundOnButton.onClick.AddListener(gameManager.ToggleSound);
-                
+
             if (soundOffButton != null)
                 soundOffButton.onClick.AddListener(gameManager.ToggleSound);
         }
+
         if (resetDataButton != null)
         {
-            resetDataButton.onClick.AddListener(() => {
+            resetDataButton.onClick.AddListener(() =>
+            {
                 if (gameManager != null)
                 {
                     gameManager.ResetAllData();
@@ -110,28 +122,31 @@ public class UIManager : MonoBehaviour
             UpdateLevelNumber(gameManager.GetCurrentLevel());
             UpdateTotalStars(gameManager.GetTotalStars());
             UpdateSoundButtons(gameManager.GetSoundState());
-            
+
             bool hasMultipleStages = gameManager.GetTotalStagesInLevel() > 1;
-            float progress = 0.5f; 
+            float progress = 0.5f;
             if (hasMultipleStages)
             {
                 progress = (float)(gameManager.GetCurrentStage() - 1) / gameManager.GetTotalStagesInLevel();
             }
+
             UpdateStageProgress(progress, hasMultipleStages);
         }
     }
+
     public void UpdateStageProgress(float progress, bool hasMultipleStages)
     {
         if (stageProgressContainer != null)
         {
             stageProgressContainer.SetActive(hasMultipleStages);
         }
-        
+
         if (hasMultipleStages)
         {
             currentProgress = progress == 0 ? 0.5f : 1f;
         }
     }
+
     public void UpdateLevelNumber(int level)
     {
         if (levelNumberText != null)
@@ -157,13 +172,16 @@ public class UIManager : MonoBehaviour
             timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
         }
     }
+
     private void Update()
     {
         if (stageProgressFill != null)
         {
-            stageProgressFill.fillAmount = Mathf.Lerp(stageProgressFill.fillAmount, currentProgress, Time.deltaTime * progressLerpSpeed);
+            stageProgressFill.fillAmount = Mathf.Lerp(stageProgressFill.fillAmount, currentProgress,
+                Time.deltaTime * progressLerpSpeed);
         }
     }
+
     public void UpdateTotalStars(int stars)
     {
         if (totalStarsText != null)
@@ -171,7 +189,7 @@ public class UIManager : MonoBehaviour
             totalStarsText.text = stars.ToString();
         }
     }
-    
+
     public void UpdateSoundButtons(bool isSoundOn)
     {
         if (soundOnImage != null && soundOffImage != null)
@@ -196,7 +214,7 @@ public class UIManager : MonoBehaviour
             failPanel.SetActive(true);
         }
     }
-    
+
     private void HideAllPanels()
     {
         pausePanel.SetActive(false);

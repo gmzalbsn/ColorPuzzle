@@ -17,8 +17,9 @@ public class InputManager : MonoBehaviour
     private string blockColor;
     private int blockPartCount;
     [SerializeField] private float returnDuration = 0.2f;
-    [SerializeField] private bool useSnapEffect = true; 
+    [SerializeField] private bool useSnapEffect = true;
     [SerializeField] private float highlightSearchRadius = 2.0f;
+
     private void Start()
     {
         if (gameCamera == null)
@@ -79,6 +80,7 @@ public class InputManager : MonoBehaviour
             Debug.Log("Block is still processing, ignoring new touch");
             return;
         }
+
         Ray ray = gameCamera.ScreenPointToRay(screenPosition);
         RaycastHit hit;
 
@@ -96,7 +98,7 @@ public class InputManager : MonoBehaviour
                         sourceGridManager.FixAllBlocksOnBoard();
                         return;
                     }
-                    
+
                     blockColor = block.GetColor();
                     blockPartCount = block.GetBlockPartCount();
                     if (sourceGridManager != null)
@@ -105,7 +107,7 @@ public class InputManager : MonoBehaviour
                         sourceGridManager.PrintBoardStatus();
                     }
                 }
-                
+
                 selectedBlock = block;
                 selectedBlock.StartDrag();
                 isDragging = true;
@@ -144,15 +146,16 @@ public class InputManager : MonoBehaviour
         {
             return;
         }
+
         GridManager targetGridManager = null;
         List<GridCell> highlightedCells = GetHighlightedCellsUnderBlock(out targetGridManager);
         bool validTarget = (highlightedCells != null);
         bool noOtherBlockPresent = validTarget && !IsAnotherBlockPresent(highlightedCells);
-        
+
         bool allPartsHighlighted = validTarget && (highlightedCells.Count == selectedBlock.GetBlockPartCount());
-        
+
         bool correctCellCount = validTarget && (highlightedCells.Count > 0) && allPartsHighlighted;
-        
+
         if (!validTarget || !noOtherBlockPresent || !correctCellCount)
         {
             if (useSnapEffect)
@@ -163,12 +166,13 @@ public class InputManager : MonoBehaviour
             {
                 ResetBlockPosition();
             }
-            
+
             selectedBlock.HighlightGridCells(false);
             selectedBlock = null;
             isDragging = false;
             return;
         }
+
         if (useSnapEffect)
         {
             PlaceBlockOnAveragePositionWithEffect(highlightedCells);
@@ -177,17 +181,18 @@ public class InputManager : MonoBehaviour
         {
             PlaceBlockOnAveragePosition(highlightedCells);
         }
-    
+
         if (targetGridManager != null)
         {
             targetGridManager.RegisterBlockParts(blockColor, blockPartCount);
         }
-    
+
         selectedBlock.HighlightGridCells(false);
         selectedBlock = null;
         isDragging = false;
         sourceGridManager = null;
     }
+
     private void PlaceBlockOnAveragePositionWithEffect(List<GridCell> highlightedCells)
     {
         if (highlightedCells == null || highlightedCells.Count == 0 || selectedBlock == null)
@@ -197,17 +202,14 @@ public class InputManager : MonoBehaviour
         }
 
         Vector3 averagePosition = CalculateAveragePosition(highlightedCells);
-    
-        // Önce originalPosition'ı güncelle, sonra bloku yerleştir
         selectedBlock.originalPosition = averagePosition;
         selectedBlock.EndDragWithEffect(averagePosition);
-    
-        Debug.Log($"Placed block with effect at {averagePosition}, updated original position");
     }
+
     private bool IsAnotherBlockPresent(List<GridCell> highlightedCells)
     {
         if (selectedBlock == null) return false;
-        
+
         foreach (GridCell cell in highlightedCells)
         {
             Collider[] colliders = Physics.OverlapSphere(cell.transform.position, 0.1f);
@@ -216,124 +218,109 @@ public class InputManager : MonoBehaviour
                 Block otherBlock = col.GetComponentInParent<Block>();
                 if (otherBlock != null && otherBlock != selectedBlock)
                 {
-                    return true; 
+                    return true;
                 }
             }
         }
-        return false; 
+
+        return false;
     }
 
-   private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
-{
-    List<GridCell> highlightedCells = new List<GridCell>();
-    commonGridManager = null;
-    
-    if (selectedBlock == null)
+    private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
     {
-        Debug.LogWarning("GetHighlightedCellsUnderBlock: selectedBlock is null");
-        return null;
-    }
-    
-    // Highlight edilen hücreleri say
-    int totalHighlighted = 0;
-    
-    // Blok etrafındaki tüm hücreleri taramak için daha büyük bir yarıçap kullan
-    Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, highlightSearchRadius * 1.5f);
-    Dictionary<GridManager, List<GridCell>> cellsByManager = new Dictionary<GridManager, List<GridCell>>();
-    
-    foreach (Collider col in hitColliders)
-    {
-        GridCell cell = col.GetComponent<GridCell>();
-        if (cell != null)
+        List<GridCell> highlightedCells = new List<GridCell>();
+        commonGridManager = null;
+
+        if (selectedBlock == null)
         {
-            // Sadece highlight edilen hücreleri dikkate al
-            if (cell.IsHighlighted())
+            Debug.LogWarning("GetHighlightedCellsUnderBlock: selectedBlock is null");
+            return null;
+        }
+
+        int totalHighlighted = 0;
+
+        Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, highlightSearchRadius * 1.5f);
+        Dictionary<GridManager, List<GridCell>> cellsByManager = new Dictionary<GridManager, List<GridCell>>();
+
+        foreach (Collider col in hitColliders)
+        {
+            GridCell cell = col.GetComponent<GridCell>();
+            if (cell != null)
             {
-                totalHighlighted++;
-                
-                GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
-                if (cellGridManager != null)
+                if (cell.IsHighlighted())
                 {
-                    if (!cellsByManager.ContainsKey(cellGridManager))
+                    totalHighlighted++;
+
+                    GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
+                    if (cellGridManager != null)
                     {
-                        cellsByManager[cellGridManager] = new List<GridCell>();
+                        if (!cellsByManager.ContainsKey(cellGridManager))
+                        {
+                            cellsByManager[cellGridManager] = new List<GridCell>();
+                        }
+
+                        cellsByManager[cellGridManager].Add(cell);
                     }
-                    cellsByManager[cellGridManager].Add(cell);
                 }
             }
         }
-    }
-    
-    // En çok highlight edilen hücreye sahip grid manager'ı bul
-    int maxCellCount = 0;
-    foreach (var pair in cellsByManager)
-    {
-        if (pair.Value.Count > maxCellCount)
+
+        int maxCellCount = 0;
+        foreach (var pair in cellsByManager)
         {
-            maxCellCount = pair.Value.Count;
-            commonGridManager = pair.Key;
-            highlightedCells = pair.Value;
+            if (pair.Value.Count > maxCellCount)
+            {
+                maxCellCount = pair.Value.Count;
+                commonGridManager = pair.Key;
+                highlightedCells = pair.Value;
+            }
         }
+
+        if (highlightedCells.Count == 0)
+        {
+            return null;
+        }
+
+        return highlightedCells;
     }
 
-    Debug.Log($"Total highlighted cells: {totalHighlighted}, Selected grid cells: {highlightedCells.Count}, Expected parts: {selectedBlock.GetBlockPartCount()}");
-    
-    // Eğer hiç highlight edilen hücre yoksa veya parça sayısıyla eşleşmiyorsa
-    if (highlightedCells.Count != selectedBlock.GetBlockPartCount())
+    private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
     {
-        Debug.LogWarning($"Highlighted cells count {highlightedCells.Count} doesn't match block part count {selectedBlock.GetBlockPartCount()}");
-    }
-    
-    if (highlightedCells.Count == 0)
-    {
-        return null;
-    }
-    
-    return highlightedCells;
-}
+        if (highlightedCells == null || highlightedCells.Count == 0 || selectedBlock == null)
+        {
+            return;
+        }
 
-private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
-{
-    if (highlightedCells == null || highlightedCells.Count == 0 || selectedBlock == null)
-    {
-        Debug.LogWarning("PlaceBlockOnAveragePosition: Invalid parameters");
-        return;
+        Vector3 averagePosition = CalculateAveragePosition(highlightedCells);
+        selectedBlock.originalPosition = averagePosition;
+        selectedBlock.EndDragSimple(averagePosition);
+        selectedBlock.UpdateOccupiedCells();
     }
 
-    Vector3 averagePosition = CalculateAveragePosition(highlightedCells);
-    
-    // Önce originalPosition'ı güncelle, sonra bloku yerleştir
-    selectedBlock.originalPosition = averagePosition;
-    selectedBlock.EndDragSimple(averagePosition);
-    
-    // Hücreleri güncelle
-    selectedBlock.UpdateOccupiedCells();
-    
-    Debug.Log($"Placed block at {averagePosition}, updated original position");
-}
     private Vector3 CalculateAveragePosition(List<GridCell> cells)
     {
         if (cells.Count == 0 || selectedBlock == null)
             return Vector3.zero;
-            
+
         Vector3 averagePosition = Vector3.zero;
         foreach (GridCell cell in cells)
         {
             averagePosition += cell.transform.position;
         }
-    
+
         averagePosition /= cells.Count;
         averagePosition.z = selectedBlock.originalPosition.z - selectedBlock.orginalZOffset;
-    
+
         return averagePosition;
     }
+
     private void ResetBlockPositionWithEffect()
     {
         if (selectedBlock == null)
         {
             return;
         }
-        
+
         Vector3 originalPos = selectedBlock.originalPosition;
         selectedBlock.ReturnToOriginWithEffect(originalPos);
 
@@ -342,12 +329,14 @@ private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
             sourceGridManager.RegisterBlockParts(blockColor, blockPartCount);
         }
     }
+
     private void ResetBlockPosition()
     {
         if (selectedBlock == null)
         {
             return;
         }
+
         Vector3 originalPos = selectedBlock.originalPosition;
         selectedBlock.EndDragSimple(originalPos);
 
@@ -356,12 +345,13 @@ private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
             sourceGridManager.RegisterBlockParts(blockColor, blockPartCount);
         }
     }
+
     private GridCell FindClosestGridCell(Vector3 position)
     {
         Collider[] hitColliders = Physics.OverlapSphere(position, 1f);
         float closestDistance = float.MaxValue;
         GridCell closestCell = null;
-        
+
         foreach (Collider col in hitColliders)
         {
             GridCell cell = col.GetComponent<GridCell>();
@@ -375,7 +365,7 @@ private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
                 }
             }
         }
-        
+
         return closestCell;
     }
 

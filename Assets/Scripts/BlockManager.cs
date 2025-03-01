@@ -6,13 +6,14 @@ public class BlockManager : MonoBehaviour
     [SerializeField] private GameObject blockPrefab;
     [SerializeField] private Transform blocksParent;
     [SerializeField] private Material[] colorMaterials;
-    
+
     private Dictionary<string, Block> blocks = new Dictionary<string, Block>();
+
     public void CreateBlocksForBoard(GridManager gridManager, BoardData boardData)
     {
         Transform boardBlocksParent = new GameObject($"Blocks_{boardData.id}").transform;
         boardBlocksParent.SetParent(gridManager.transform);
-        
+
         foreach (BlockData blockData in boardData.blocks)
         {
             Material colorMaterial = FindColorMaterial(blockData.color);
@@ -21,7 +22,8 @@ public class BlockManager : MonoBehaviour
                 CreateBlock(blockData, gridManager, colorMaterial, boardBlocksParent);
             }
         }
-    } 
+    }
+
     private void CreateBlock(BlockData blockData, GridManager gridManager, Material colorMaterial, Transform parent)
     {
         GameObject blockObj = Instantiate(blockPrefab, Vector3.zero, Quaternion.identity, parent);
@@ -33,6 +35,7 @@ public class BlockManager : MonoBehaviour
         string uniqueKey = $"{parent.name}_{blockData.id}";
         blocks[uniqueKey] = block;
     }
+
     private Material FindColorMaterial(string colorName)
     {
         foreach (Material mat in colorMaterials)
@@ -42,6 +45,7 @@ public class BlockManager : MonoBehaviour
                 return mat;
             }
         }
+
         return null;
     }
 }
