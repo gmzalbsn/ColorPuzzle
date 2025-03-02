@@ -6,6 +6,12 @@ using System.Linq;
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private GameObject gridCellPrefab;
+    [Header("Half Cell Prefabs")]
+    [SerializeField] private GameObject topRightPrefab;
+    [SerializeField] private GameObject topLeftPrefab;
+    [SerializeField] private GameObject bottomRightPrefab;
+    [SerializeField] private GameObject bottomLeftPrefab;
+    
     [SerializeField] private float cellSpacing = 1.1f;
     private Dictionary<Vector2Int, GridCell> gridCells = new Dictionary<Vector2Int, GridCell>();
 
@@ -57,15 +63,23 @@ public class GridManager : MonoBehaviour
         totalCellCount = gridCells.Count;
     }
 
-    public void CreateCustomGrid(int rows, int columns, List<CellPosition> customCells)
+    public void CreateCustomGrid(int rows, int columns, List<CellPosition> customCells, List<CellType> cellTypes = null)
     {
         ClearGrid();
 
         if (customCells != null && customCells.Count > 0)
         {
-            foreach (CellPosition cell in customCells)
+            for (int i = 0; i < customCells.Count; i++)
             {
-                CreateCell(cell.x, cell.y);
+                CellPosition cell = customCells[i];
+                CellType cellType = CellType.Full;
+                
+                if (cellTypes != null && i < cellTypes.Count)
+                {
+                    cellType = cellTypes[i];
+                }
+
+                CreateCell(cell.x, cell.y, cellType);
             }
         }
         else
@@ -76,19 +90,35 @@ public class GridManager : MonoBehaviour
         totalCellCount = gridCells.Count;
     }
 
-    private void CreateCell(int col, int row)
+    private void CreateCell(int col, int row, CellType cellType = CellType.Full)
     {
-        Vector3 position = new Vector3(col, 0, row);
-        GameObject cellObj = Instantiate(gridCellPrefab, position, Quaternion.identity, transform);
-        cellObj.name = $"GridCell_{row}_{col}";
-
+        Vector3 position = new Vector3(col * cellSpacing, 0, row * cellSpacing);
+        GameObject prefabToUse = GetCellPrefab(cellType);
+        GameObject cellObj = Instantiate(prefabToUse, position, Quaternion.identity, transform);
+        cellObj.name = $"GridCell_{row}_{col}_{cellType}";
         GridCell cell = cellObj.GetComponent<GridCell>();
         if (cell == null)
             cell = cellObj.AddComponent<GridCell>();
-
-        cell.Initialize(new Vector2Int(col, row));
-
+        cell.Initialize(new Vector2Int(col, row), cellType);
         gridCells.Add(new Vector2Int(col, row), cell);
+    }
+    private GameObject GetCellPrefab(CellType cellType)
+    {
+        switch (cellType)
+        {
+            case CellType.Full:
+                return gridCellPrefab;
+            case CellType.TopRight:
+                return topRightPrefab != null ? topRightPrefab : gridCellPrefab;
+            case CellType.TopLeft:
+                return topLeftPrefab != null ? topLeftPrefab : gridCellPrefab;
+            case CellType.BottomRight:
+                return bottomRightPrefab != null ? bottomRightPrefab : gridCellPrefab;
+            case CellType.BottomLeft:
+                return bottomLeftPrefab != null ? bottomLeftPrefab : gridCellPrefab;
+            default:
+                return gridCellPrefab;
+        }
     }
 
     private void ClearGrid()

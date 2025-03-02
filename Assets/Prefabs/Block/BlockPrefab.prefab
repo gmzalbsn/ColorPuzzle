@@ -46,3 +46,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   blockPartPrefab: {fileID: 5281904762983967142, guid: 014440dad7de4954ba3d5a3c222faef3, type: 3}
   fixedBlockPartPrefab: {fileID: 3059594996679611937, guid: 551777b3a4aa7904e90a4699842afe6d, type: 3}
+  topRightBlockPrefab: {fileID: 7360295698641714302, guid: 0b4c8ae60cf6dbc41b2583f64a6e9333, type: 3}
+  topLeftBlockPrefab: {fileID: 5118364503244105907, guid: 24c51ea1e57664646bc602a8f4e45871, type: 3}
+  bottomRightBlockPrefab: {fileID: 3026772160091534005, guid: 54cd3dfe5bc7b3741958fff75c2189cc, type: 3}
+  bottomLeftBlockPrefab: {fileID: 9040236733698320566, guid: 35c2a4392c053e9478bd29e07c187741, type: 3}
+  isFixed: 0
+  originalPosition: {x: 0, y: 0, z: 0}
+  orginalZOffset: 0.005
+  snapDuration: 0.3
+  returnDuration: 0.25
+  highlightRadius: 0.4

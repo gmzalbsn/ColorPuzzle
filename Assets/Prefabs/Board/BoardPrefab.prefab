@@ -45,6 +45,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gridCellPrefab: {fileID: 5281904762983967142, guid: 087c8421c7beab44ca24dc535fc65882, type: 3}
+  topRightPrefab: {fileID: 3214393531224238748, guid: 25431da72abd8b34aa7b5ccfd7ebc6e4, type: 3}
+  topLeftPrefab: {fileID: 805415991732555912, guid: 8342e01056bcc724ebc3d0541c02b3f1, type: 3}
+  bottomRightPrefab: {fileID: 9008229681414474883, guid: 63e8d99bbec52a6418023d0d23d0370a, type: 3}
+  bottomLeftPrefab: {fileID: 5170654944313165258, guid: 5f6f1a8de1c71de419221fe574b796ff, type: 3}
   cellSpacing: 1
   boardId: 
   completionEffectPrefab: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55, type: 3}

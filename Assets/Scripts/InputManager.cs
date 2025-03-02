@@ -226,64 +226,115 @@ public class InputManager : MonoBehaviour
         return false;
     }
 
-    private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
+   private List<GridCell> GetHighlightedCellsUnderBlock(out GridManager commonGridManager)
+{
+    List<GridCell> highlightedCells = new List<GridCell>();
+    commonGridManager = null;
+
+    if (selectedBlock == null)
     {
-        List<GridCell> highlightedCells = new List<GridCell>();
-        commonGridManager = null;
+        Debug.LogWarning("GetHighlightedCellsUnderBlock: selectedBlock is null");
+        return null;
+    }
 
-        if (selectedBlock == null)
+    int totalHighlighted = 0;
+
+    Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, highlightSearchRadius * 1.5f);
+    Dictionary<GridManager, List<GridCell>> cellsByManager = new Dictionary<GridManager, List<GridCell>>();
+
+    // Blok köşe tipini al
+    Block blockComponent = selectedBlock.GetComponent<Block>();
+    BlockCornerType blockCornerType = BlockCornerType.Full;
+    if (blockComponent != null)
+    {
+        blockCornerType = blockComponent.GetCornerType();
+    }
+
+    foreach (Collider col in hitColliders)
+    {
+        GridCell cell = col.GetComponent<GridCell>();
+        if (cell != null)
         {
-            Debug.LogWarning("GetHighlightedCellsUnderBlock: selectedBlock is null");
-            return null;
-        }
-
-        int totalHighlighted = 0;
-
-        Collider[] hitColliders = Physics.OverlapSphere(selectedBlock.transform.position, highlightSearchRadius * 1.5f);
-        Dictionary<GridManager, List<GridCell>> cellsByManager = new Dictionary<GridManager, List<GridCell>>();
-
-        foreach (Collider col in hitColliders)
-        {
-            GridCell cell = col.GetComponent<GridCell>();
-            if (cell != null)
+            if (cell.IsHighlighted())
             {
-                if (cell.IsHighlighted())
+                // Eğer bu yarım blok ise köşe tipi kontrolü yap
+                if (blockCornerType != BlockCornerType.Full)
                 {
-                    totalHighlighted++;
-
-                    GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
-                    if (cellGridManager != null)
+                    // Köşe tiplerinin eşleşip eşleşmediğini kontrol et
+                    bool typeMatches = CheckCornerTypeMatch(blockCornerType, cell.GetCellType());
+                    if (!typeMatches)
                     {
-                        if (!cellsByManager.ContainsKey(cellGridManager))
-                        {
-                            cellsByManager[cellGridManager] = new List<GridCell>();
-                        }
-
-                        cellsByManager[cellGridManager].Add(cell);
+                        Debug.LogWarning($"Köşe tipi eşleşmiyor: Blok: {blockCornerType}, Hücre: {cell.GetCellType()}");
+                        continue; // Eşleşmezse bu hücreyi atla
                     }
+                }
+                
+                totalHighlighted++;
+
+                GridManager cellGridManager = cell.GetComponentInParent<GridManager>();
+                if (cellGridManager != null)
+                {
+                    if (!cellsByManager.ContainsKey(cellGridManager))
+                    {
+                        cellsByManager[cellGridManager] = new List<GridCell>();
+                    }
+
+                    cellsByManager[cellGridManager].Add(cell);
                 }
             }
         }
-
-        int maxCellCount = 0;
-        foreach (var pair in cellsByManager)
-        {
-            if (pair.Value.Count > maxCellCount)
-            {
-                maxCellCount = pair.Value.Count;
-                commonGridManager = pair.Key;
-                highlightedCells = pair.Value;
-            }
-        }
-
-        if (highlightedCells.Count == 0)
-        {
-            return null;
-        }
-
-        return highlightedCells;
     }
 
+    int maxCellCount = 0;
+    foreach (var pair in cellsByManager)
+    {
+        if (pair.Value.Count > maxCellCount)
+        {
+            maxCellCount = pair.Value.Count;
+            commonGridManager = pair.Key;
+            highlightedCells = pair.Value;
+        }
+    }
+
+    if (highlightedCells.Count == 0)
+    {
+        return null;
+    }
+
+    return highlightedCells;
+}
+
+// Köşe tipi eşleşmesini kontrol eden yardımcı metod
+private bool CheckCornerTypeMatch(BlockCornerType blockType, CellType cellType)
+{
+    // Tam tip herzaman eşleşir
+    if (blockType == BlockCornerType.Full || cellType == CellType.Full)
+    {
+        return true;
+    }
+    
+    // Dönüşümü yaparak karşılaştır
+    CellType equivalentCellType = CellType.Full;
+    
+    switch (blockType)
+    {
+        case BlockCornerType.TopRight:
+            equivalentCellType = CellType.TopRight;
+            break;
+        case BlockCornerType.TopLeft:
+            equivalentCellType = CellType.TopLeft;
+            break;
+        case BlockCornerType.BottomRight:
+            equivalentCellType = CellType.BottomRight;
+            break;
+        case BlockCornerType.BottomLeft:
+            equivalentCellType = CellType.BottomLeft;
+            break;
+    }
+    
+    return equivalentCellType == cellType;
+}
+// Köşe tipi eşleşmesini kontrol eden yardımcı metod
     private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
     {
         if (highlightedCells == null || highlightedCells.Count == 0 || selectedBlock == null)

@@ -1,0 +1,133 @@
+{
+  "hasMultipleStages": false,
+  "currentStage": 1,
+  "totalStages": 1,
+  "timeLimit": 120,
+  "requiredCompletedBoards": 3,
+  "boardSpacing": 3.5,
+  "cameraOffset": 10,
+  "cameraXOffset": 0.5,
+  "cameraYOffset": 0.0,
+  "boards": [
+    {
+      "id": "board1",
+      "position": "middle",
+      "rows": 2,
+      "columns": 2,
+      "hasCustomShape": true,
+      "customCells": [
+        {"x": 0, "y": 0},
+        {"x": 0, "y": 1},
+        {"x": 1, "y": 0},
+        {"x": 1, "y": 1}
+      ],
+      "cellTypes": [1, 2, 3, 4],
+      "blocks": [
+        {
+          "id": "block1_1",
+          "color": "purple",
+          "isFixed": false,
+          "cornerTypeValue": 1,
+          "parts": [
+            {"gridX": 0, "gridY": 0}
+          ]
+        },
+        {
+          "id": "block1_2",
+          "color": "purple",
+          "isFixed": false,
+          "cornerTypeValue": 4,
+          "parts": [
+            {"gridX": 1, "gridY": 1}
+          ]
+        },
+        {
+          "id": "block1_3",
+          "color": "green",
+          "isFixed": false,
+          "cornerTypeValue": 3,
+          "parts": [
+            {"gridX": 1, "gridY": 0}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "board2",
+      "position": "left",
+      "rows": 2,
+      "columns": 2,
+      "hasCustomShape": true,
+      "customCells": [
+        {"x": 0, "y": 0},
+        {"x": 0, "y": 1},
+        {"x": 1, "y": 0},
+        {"x": 1, "y": 1}
+      ],
+      "cellTypes": [1, 2, 3, 4],
+      "blocks": [
+        {
+          "id": "block2_1",
+          "color": "green",
+          "isFixed": false,
+          "cornerTypeValue": 1,
+          "parts": [
+            {"gridX": 0, "gridY": 0}
+          ]
+        },
+        {
+          "id": "block2_2",
+          "color": "green",
+          "isFixed": false,
+          "cornerTypeValue": 2,
+          "parts": [
+            {"gridX": 0, "gridY": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "board3",
+      "position": "right",
+      "rows": 2,
+      "columns": 2,
+      "hasCustomShape": true,
+      "customCells": [
+        {"x": 0, "y": 0},
+        {"x": 0, "y": 1},
+        {"x": 1, "y": 0},
+        {"x": 1, "y": 1}
+      ],
+      "cellTypes": [1, 2, 3, 4],
+      "blocks": [
+        {
+          "id": "block3_1",
+          "color": "green",
+          "isFixed": false,
+          "cornerTypeValue": 4,
+          "parts": [
+            {"gridX": 1, "gridY": 1}
+          ]
+        },
+        {
+          "id": "block3_2",
+          "color": "purple",
+          "isFixed": false,
+          "cornerTypeValue": 2,
+          "parts": [
+            {"gridX": 0, "gridY": 1}
+          ]
+        },
+        {
+          "id": "block3_3",
+          "color": "purple",
+          "isFixed": false,
+          "cornerTypeValue": 3,
+          "parts": [
+            {"gridX": 1, "gridY": 0}
+          ]
+        }
+      ]
+    }
+  ]
+}

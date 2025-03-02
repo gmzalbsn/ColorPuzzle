@@ -29,6 +29,7 @@ public class BoardData
 
     public bool hasCustomShape = false;
     public List<CellPosition> customCells;
+    public List<int> cellTypes; 
 }
 
 [System.Serializable]
@@ -44,7 +45,35 @@ public class BlockData
     public string id;
     public string color;
     public bool isFixed;
+    public int cornerTypeValue;
+    [System.NonSerialized] 
+    private BlockCornerType _cornerType = BlockCornerType.Full; 
+    public BlockCornerType cornerType
+    {
+        get
+        {
+            if (_cornerType == BlockCornerType.Full) 
+            {
+                if (cornerTypeValue >= 0 && cornerTypeValue <= 4)
+                {
+                    _cornerType = (BlockCornerType)cornerTypeValue;
+                }
+                else
+                {
+                    _cornerType = BlockCornerType.Full;
+                }
+            }
+
+            return _cornerType;
+        }
+    }
+
     public List<BlockPartPosition> parts;
+
+    public override string ToString()
+    {
+        return $"BlockData[id={id}, color={color}, cornerTypeValue={cornerTypeValue}, cornerType={cornerType}]";
+    }
 }
 
 [System.Serializable]
@@ -268,6 +297,40 @@ public class LevelLoader : MonoBehaviour
         yield return new WaitForSeconds(cameraAdjustDelay);
     }
 
+    private List<CellType> ConvertToCellTypes(List<int> cellTypeIds)
+    {
+        if (cellTypeIds == null || cellTypeIds.Count == 0)
+            return null;
+
+        List<CellType> cellTypes = new List<CellType>();
+        foreach (int typeId in cellTypeIds)
+        {
+            CellType type = CellType.Full; 
+
+            switch (typeId)
+            {
+                case 0:
+                    type = CellType.Full;
+                    break;
+                case 1:
+                    type = CellType.TopRight;
+                    break;
+                case 2:
+                    type = CellType.TopLeft;
+                    break;
+                case 3:
+                    type = CellType.BottomRight;
+                    break;
+                case 4:
+                    type = CellType.BottomLeft;
+                    break;
+            }
+            cellTypes.Add(type);
+        }
+
+        return cellTypes;
+    }
+
     private void CreateBoards(Transform parent = null)
     {
         if (currentLevelData == null || currentLevelData.boards == null)
@@ -312,10 +375,18 @@ public class LevelLoader : MonoBehaviour
                 GameObject boardObj = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity, targetParent);
                 boardObj.name = boardData.id;
                 GridManager gridManager = boardObj.GetComponentInChildren<GridManager>();
+
+                if (gridManager == null)
+                {
+                    continue;
+                }
+
                 gridManager.SetBoardId(boardData.id);
                 if (boardData.hasCustomShape && boardData.customCells != null && boardData.customCells.Count > 0)
                 {
-                    gridManager.CreateCustomGrid(boardData.rows, boardData.columns, boardData.customCells);
+                    List<CellType> cellTypeList = ConvertToCellTypes(boardData.cellTypes);
+                    gridManager.CreateCustomGrid(boardData.rows, boardData.columns, boardData.customCells,
+                        cellTypeList);
                 }
                 else
                 {

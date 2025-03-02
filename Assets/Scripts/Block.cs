@@ -3,10 +3,26 @@ using UnityEngine;
 using System.Collections.Generic;
 using DG.Tweening;
 
+public enum BlockCornerType
+{
+    Full = 0,
+    TopRight = 1,
+    TopLeft = 2, 
+    BottomRight = 3,
+    BottomLeft = 4
+}
+
 public class Block : MonoBehaviour
 {
     [SerializeField] private GameObject blockPartPrefab;
     [SerializeField] private GameObject fixedBlockPartPrefab;
+
+    [Header("Corner Block Prefabs")] [SerializeField]
+    private GameObject topRightBlockPrefab;
+
+    [SerializeField] private GameObject topLeftBlockPrefab;
+    [SerializeField] private GameObject bottomRightBlockPrefab;
+    [SerializeField] private GameObject bottomLeftBlockPrefab;
 
     private string blockId;
     private string blockColor;
@@ -26,6 +42,7 @@ public class Block : MonoBehaviour
     [SerializeField] private float returnDuration = 0.25f;
     [SerializeField] private float highlightRadius = 0.4f;
 
+    private BlockCornerType blockCornerType;
 
     private void Start()
     {
@@ -37,41 +54,110 @@ public class Block : MonoBehaviour
         originalPosition = transform.position;
     }
 
-    public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
+public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
+{
+    blockId = data.id;
+    blockColor = data.color;
+    isFixed = data.isFixed;
+    blockCornerType = (BlockCornerType)data.cornerTypeValue;
+    
+    Debug.Log($"Initialize: Block {blockId}, Color: {blockColor}, isFixed: {isFixed}, CornerType: {blockCornerType}");
+
+    foreach (BlockPartPosition partPos in data.parts)
     {
-        blockId = data.id;
-        blockColor = data.color;
-        isFixed = data.isFixed;
-        foreach (BlockPartPosition partPos in data.parts)
+        GridCell cell = gridManager.GetCell(partPos.gridX, partPos.gridY);
+        if (cell == null) continue;
+        gridPositions.Add(new Vector2Int(partPos.gridX, partPos.gridY));
+        GameObject prefabToUse;
+
+        if (blockCornerType == BlockCornerType.Full)
         {
-            GridCell cell = gridManager.GetCell(partPos.gridX, partPos.gridY);
-            if (cell == null) continue;
-            gridPositions.Add(new Vector2Int(partPos.gridX, partPos.gridY));
-            GameObject prefabToUse = isFixed ? fixedBlockPartPrefab : blockPartPrefab;
-            GameObject part = Instantiate(prefabToUse, cell.GetWorldPosition(), Quaternion.identity, transform);
-            part.name = $"Part_{partPos.gridX}_{partPos.gridY}";
-            MeshRenderer renderer = part.GetComponent<BlockPart>().meshRenderer;
+            prefabToUse = isFixed ? fixedBlockPartPrefab : blockPartPrefab;
+        }
+        else
+        {
+            prefabToUse = GetPrefabForCornerType(blockCornerType);
+        }
+        GameObject part = Instantiate(prefabToUse, cell.GetWorldPosition(), Quaternion.identity, transform);
+        part.name = $"Part_{partPos.gridX}_{partPos.gridY}_{blockCornerType}";
+        BlockPart blockPart = part.GetComponent<BlockPart>();
+        if (blockPart != null && blockPart.meshRenderer != null && colorMaterial != null)
+        {
+            blockPart.meshRenderer.material = colorMaterial;
+            if (isFixed)
+            {
+                Color color = blockPart.meshRenderer.material.color;
+                color.a = 0.7f;  
+                blockPart.meshRenderer.material.color = color;
+            }
+        }
+        else
+        {
+            MeshRenderer renderer = part.GetComponentInChildren<MeshRenderer>();
             if (renderer != null && colorMaterial != null)
             {
                 renderer.material = colorMaterial;
+                if (isFixed)
+                {
+                    Color color = renderer.material.color;
+                    color.a = 0.7f;  
+                    renderer.material.color = color;
+                }
             }
-
-            blockParts.Add(part);
-            part.transform.rotation = Quaternion.Euler(-90, 0, 0);
         }
 
-        RecalculatePosition();
-        Vector3 pos = transform.position;
-        pos.z -= orginalZOffset;
-        transform.position = pos;
-        gridManager.RegisterBlockParts(blockColor, blockParts.Count);
-        if (isFixed)
-        {
-            UpdateOccupiedCells();
-        }
-
-        Invoke("UpdateOriginalPosition", 0.1f);
+        blockParts.Add(part);
+        part.transform.rotation = Quaternion.Euler(-90, 0, 0);
     }
+
+    RecalculatePosition();
+    Vector3 pos = transform.position;
+    pos.z -= orginalZOffset;
+    transform.position = pos;
+    gridManager.RegisterBlockParts(blockColor, blockParts.Count);
+    if (isFixed)
+    {
+        UpdateOccupiedCells();
+    }
+
+    Invoke("UpdateOriginalPosition", 0.1f);
+}
+private GameObject GetPrefabForCornerType(BlockCornerType cornerType)
+{
+    
+    switch (cornerType)
+    {
+        case BlockCornerType.TopRight:
+            if (topRightBlockPrefab != null) {
+                return topRightBlockPrefab;
+            }
+            break;
+            
+        case BlockCornerType.TopLeft:
+            if (topLeftBlockPrefab != null) {
+                return topLeftBlockPrefab;
+            }
+            break;
+            
+        case BlockCornerType.BottomRight:
+            if (bottomRightBlockPrefab != null) {
+                return bottomRightBlockPrefab;
+            }
+            break;
+            
+        case BlockCornerType.BottomLeft:
+            if (bottomLeftBlockPrefab != null) {
+                return bottomLeftBlockPrefab;
+            }
+            break;
+    }
+    return blockPartPrefab;
+}
+public BlockCornerType GetCornerType()
+{
+    return blockCornerType;
+}
+
 
     private void RecalculatePosition()
     {
@@ -261,67 +347,94 @@ public class Block : MonoBehaviour
     {
         return blockParts.Count;
     }
-
-    public void HighlightGridCells(bool highlighted)
+public void HighlightGridCells(bool highlighted)
+{
+    GridCell[] allCellsInScene = FindObjectsOfType<GridCell>();
+    foreach (GridCell cell in allCellsInScene)
     {
-        GridCell[] allCellsInScene = FindObjectsOfType<GridCell>();
-        foreach (GridCell cell in allCellsInScene)
+        cell.SetHighlighted(false);
+    }
+
+    if (!highlighted || isFixed)
+    {
+        return;
+    }
+
+    float searchRadius = blockParts.Count <= 6 ? 1.5f : 1.1f;
+
+    GridManager nearestGridManager = FindNearestGridManager();
+    if (nearestGridManager == null)
+    {
+        return;
+    }
+
+    Dictionary<Vector2Int, GridCell> validCells = nearestGridManager.GetAllCells();
+    if (validCells.Count == 0)
+    {
+        return;
+    }
+
+    List<GridCell> cellsToHighlight = new List<GridCell>();
+
+    foreach (GameObject part in blockParts)
+    {
+        if (part == null) continue;
+
+        Vector3 partWorldPos = transform.position + part.transform.localPosition;
+        GridCell bestCell = null;
+        float bestDistance = float.MaxValue;
+
+        foreach (var entry in validCells)
         {
-            cell.SetHighlighted(false);
-        }
-
-        if (!highlighted || isFixed)
-        {
-            return;
-        }
-
-        float searchRadius = blockParts.Count <= 6 ? 1.5f : 1.1f;
-
-        GridManager nearestGridManager = FindNearestGridManager();
-        if (nearestGridManager == null)
-        {
-            return;
-        }
-
-        Dictionary<Vector2Int, GridCell> validCells = nearestGridManager.GetAllCells();
-        if (validCells.Count == 0)
-        {
-            return;
-        }
-
-        List<GridCell> cellsToHighlight = new List<GridCell>();
-
-        foreach (GameObject part in blockParts)
-        {
-            if (part == null) continue;
-
-            Vector3 partWorldPos = transform.position + part.transform.localPosition;
-            GridCell bestCell = null;
-            float bestDistance = float.MaxValue;
-
-            foreach (var entry in validCells)
+            GridCell cell = entry.Value;
+            if (cell != null && !cellsToHighlight.Contains(cell))
             {
-                GridCell cell = entry.Value;
-                if (cell != null && !cellsToHighlight.Contains(cell))
+                if (blockCornerType != BlockCornerType.Full)
                 {
-                    float distance = Vector3.Distance(partWorldPos, cell.transform.position);
-
-                    // Belirlenen yarıçapı kullan
-                    if (distance < searchRadius && distance < bestDistance)
+                    bool typeMatches = (cell.GetCellType() == CellType.Full) || 
+                                       (BlockCornerTypeMatchesCellType(blockCornerType, cell.GetCellType()));
+                    
+                    if (!typeMatches)
                     {
-                        bestDistance = distance;
-                        bestCell = cell;
+                        continue;
                     }
                 }
-            }
 
-            if (bestCell != null && !cellsToHighlight.Contains(bestCell))
-            {
-                bestCell.SetHighlighted(true);
-                cellsToHighlight.Add(bestCell);
+                float distance = Vector3.Distance(partWorldPos, cell.transform.position);
+                float effectiveRadius = (blockCornerType != BlockCornerType.Full) ? 1.2f : searchRadius;
+                if (distance < effectiveRadius && distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestCell = cell;
+                }
             }
         }
+
+        if (bestCell != null && !cellsToHighlight.Contains(bestCell))
+        {
+            bestCell.SetHighlighted(true);
+            cellsToHighlight.Add(bestCell);
+        }
     }
+}
+private bool BlockCornerTypeMatchesCellType(BlockCornerType blockType, CellType cellType)
+{
+    switch (blockType)
+    {
+        case BlockCornerType.TopRight:
+            return cellType == CellType.TopRight;
+        case BlockCornerType.TopLeft:
+            return cellType == CellType.TopLeft;
+        case BlockCornerType.BottomRight:
+            return cellType == CellType.BottomRight;
+        case BlockCornerType.BottomLeft:
+            return cellType == CellType.BottomLeft;
+        case BlockCornerType.Full:
+            return cellType == CellType.Full;
+        default:
+            return false;
+    }
+}
 
     private GridManager FindNearestGridManager()
     {

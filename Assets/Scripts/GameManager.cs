@@ -150,20 +150,20 @@ public class GameManager : MonoBehaviour
 
     private void LoadSavedData()
     {
-        currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
-        currentStage = 1;
-        totalStars = PlayerPrefs.GetInt("TotalStars", 0);
-        isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
-
-        Debug.Log($"Loaded data: Level={currentLevel}, Stage=1 (reset to beginning)");
+        // currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
+        // currentStage = 1;
+        // totalStars = PlayerPrefs.GetInt("TotalStars", 0);
+        // isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
+        //
+        // Debug.Log($"Loaded data: Level={currentLevel}, Stage=1 (reset to beginning)");
     }
 
     private void SaveData()
     {
-        PlayerPrefs.SetInt("CurrentLevel", currentLevel);
-        PlayerPrefs.SetInt("TotalStars", totalStars);
-        PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
-        PlayerPrefs.Save();
+        // PlayerPrefs.SetInt("CurrentLevel", currentLevel);
+        // PlayerPrefs.SetInt("TotalStars", totalStars);
+        // PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
+        // PlayerPrefs.Save();
     }
 
     public void LoadCurrentLevel()

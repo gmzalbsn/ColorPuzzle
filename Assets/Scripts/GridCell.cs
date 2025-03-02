@@ -1,5 +1,12 @@
 using UnityEngine;
-
+public enum CellType
+{
+    Full = 0,
+    TopRight = 1,
+    TopLeft = 2,
+    BottomRight = 3,
+    BottomLeft = 4
+}
 public class GridCell : MonoBehaviour
 {
     [SerializeField] private MeshRenderer meshRenderer;
@@ -10,15 +17,21 @@ public class GridCell : MonoBehaviour
     public bool isOccupied = false;
     public string occupiedByColor = "";
     public Block occupiedByBlock = null;
-
-    public void Initialize(Vector2Int coords)
+    private CellType cellType;
+    private bool isPartOfFullSquare = false;
+    public void Initialize(Vector2Int coords, CellType type = CellType.Full)
     {
         coordinates = coords;
+        cellType = type;
+    
         if (meshRenderer == null)
             meshRenderer = GetComponentInChildren<MeshRenderer>();
-        SetHighlighted(false);
     }
 
+    public CellType GetCellType()
+    {
+        return cellType;
+    }
     public Vector3 GetWorldPosition()
     {
         return transform.position;

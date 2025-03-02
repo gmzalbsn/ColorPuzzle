@@ -555,7 +555,7 @@ MonoBehaviour:
     cameraXOffset: 0
     cameraYOffset: 0
     boards: []
-  levelNumber: 1
+  levelNumber: 3
   stageTransitionDelay: 1
   stageTransitionDuration: 0.5
   stageTransitionEase: 15
