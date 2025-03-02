@@ -5,10 +5,11 @@
   "totalStages": 2,
   "timeLimit": 100,
   "requiredCompletedBoards": 2,
-  "boardSpacing": 5,
+  "horizontalBoardSpacing": 0,
+  "verticalBoardSpacing": 5,
   "cameraOffset": 10,
   "cameraXOffset": 1.5, 
-  "cameraYOffset": 2,
+  "cameraYOffset": 2.5,
   "yOffset": -2,
   "boards": [
     {

@@ -36,7 +36,9 @@ public class UIManager : MonoBehaviour
     private GameObject stageProgressContainer;
 
     [SerializeField] private Image stageProgressFill;
-
+    [Header("Star Animation")] 
+    [SerializeField] public RectTransform starUITarget;
+    [SerializeField] public GameObject starPrefab;
     private float progressLerpSpeed = 3f;
     private float currentProgress = 0.5f;
 

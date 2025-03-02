@@ -11,7 +11,8 @@ public class LevelData
     public int totalStages = 1;
     public int timeLimit;
     public int requiredCompletedBoards;
-    public float boardSpacing = 4.0f;
+    public float horizontalBoardSpacing = 4.0f;
+    public float verticalBoardSpacing = 4.0f;
     public float cameraOffset = 4.0f;
     public float cameraXOffset = 0f;
     public float cameraYOffset = 0f;
@@ -86,7 +87,8 @@ public class BlockPartPosition
 public class LevelLoader : MonoBehaviour
 {
     [SerializeField] private GameObject boardPrefab;
-    [SerializeField] private float boardSpacing = 4f;
+    [SerializeField] private float horizontalBoardSpacing = 4f;
+    [SerializeField] private float verticalBoardSpacing = 4f;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private BlockManager blockManager;
     private string levelFolderPath = "Assets/Scripts/LevelJson";
@@ -143,7 +145,6 @@ public class LevelLoader : MonoBehaviour
             string jsonText = levelTextAsset.text;
             currentLevelData = JsonUtility.FromJson<LevelData>(jsonText);
             requiredCompletedBoards = currentLevelData.requiredCompletedBoards;
-            boardSpacing = currentLevelData.boardSpacing;
             bool isRestarting = (gameManager != null && gameManager.isRestarting);
 
             if (currentStage > 1 && transform.childCount > 0 && !isRestarting)
@@ -349,6 +350,13 @@ public class LevelLoader : MonoBehaviour
             boardManagers.Clear();
         }
 
+        float hSpacing = currentLevelData.horizontalBoardSpacing > 0 
+            ? currentLevelData.horizontalBoardSpacing 
+            : horizontalBoardSpacing;
+        float vSpacing = currentLevelData.verticalBoardSpacing > 0 
+            ? currentLevelData.verticalBoardSpacing 
+            : verticalBoardSpacing;
+        
         Dictionary<string, List<BoardData>> boardsByRow = new Dictionary<string, List<BoardData>>();
         foreach (BoardData board in currentLevelData.boards)
         {
@@ -362,14 +370,16 @@ public class LevelLoader : MonoBehaviour
             boardsByRow[rowKey].Add(board);
         }
 
-        float totalHeight = (boardsByRow.Count - 1) * boardSpacing;
+        float totalHeight = (boardsByRow.Count - 1) * vSpacing;
         float currentY = totalHeight / 2;
 
         foreach (var rowPair in boardsByRow)
         {
             List<BoardData> rowBoards = rowPair.Value;
-            float totalRowWidth = (rowBoards.Count - 1) * boardSpacing;
+            
+            float totalRowWidth = (rowBoards.Count - 1) * hSpacing;
             float currentX = -totalRowWidth / 2;
+
             foreach (BoardData boardData in rowBoards)
             {
                 GameObject boardObj = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity, targetParent);
@@ -402,10 +412,12 @@ public class LevelLoader : MonoBehaviour
                     blockManager.CreateBlocksForBoard(gridManager, boardData);
                 }
 
-                currentX += boardSpacing;
+                // Increment horizontal position using horizontal spacing
+                currentX += hSpacing;
             }
 
-            currentY -= boardSpacing;
+            // Decrement vertical position using vertical spacing
+            currentY -= vSpacing;
         }
     }
 

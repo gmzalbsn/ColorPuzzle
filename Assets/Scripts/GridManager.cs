@@ -241,8 +241,15 @@ public class GridManager : MonoBehaviour
 
             GameObject effectInstance = Instantiate(completionEffectPrefab, effectPosition, Quaternion.identity);
             Destroy(effectInstance, 3f);
+    
+            // GameManager'dan yıldız verme işlemini çağır
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SpawnStarAtBoardPosition(effectPosition);
+            }
         }
     }
+
 
     private Vector3 CalculateBoardCenter()
     {

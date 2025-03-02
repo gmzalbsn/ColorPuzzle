@@ -303,17 +303,12 @@ public class InputManager : MonoBehaviour
 
     return highlightedCells;
 }
-
-// Köşe tipi eşleşmesini kontrol eden yardımcı metod
 private bool CheckCornerTypeMatch(BlockCornerType blockType, CellType cellType)
 {
-    // Tam tip herzaman eşleşir
     if (blockType == BlockCornerType.Full || cellType == CellType.Full)
     {
         return true;
     }
-    
-    // Dönüşümü yaparak karşılaştır
     CellType equivalentCellType = CellType.Full;
     
     switch (blockType)
@@ -334,7 +329,6 @@ private bool CheckCornerTypeMatch(BlockCornerType blockType, CellType cellType)
     
     return equivalentCellType == cellType;
 }
-// Köşe tipi eşleşmesini kontrol eden yardımcı metod
     private void PlaceBlockOnAveragePosition(List<GridCell> highlightedCells)
     {
         if (highlightedCells == null || highlightedCells.Count == 0 || selectedBlock == null)

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -16,7 +17,6 @@ public class GameManager : MonoBehaviour
     private float initialLevelTimer = 0; // İlk timer değerini sakla
     private LevelLoader levelLoader;
     private UIManager uiManager;
-
     public delegate void BoardsUpdatedHandler(int completed);
 
     public event BoardsUpdatedHandler OnBoardsUpdated;
@@ -150,20 +150,18 @@ public class GameManager : MonoBehaviour
 
     private void LoadSavedData()
     {
-        // currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
-        // currentStage = 1;
-        // totalStars = PlayerPrefs.GetInt("TotalStars", 0);
-        // isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
-        //
-        // Debug.Log($"Loaded data: Level={currentLevel}, Stage=1 (reset to beginning)");
+        currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
+        currentStage = 1;
+        totalStars = PlayerPrefs.GetInt("TotalStars", 0);
+        isSoundOn = PlayerPrefs.GetInt("SoundOn", 1) == 1;
     }
 
     private void SaveData()
     {
-        // PlayerPrefs.SetInt("CurrentLevel", currentLevel);
-        // PlayerPrefs.SetInt("TotalStars", totalStars);
-        // PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
-        // PlayerPrefs.Save();
+        PlayerPrefs.SetInt("CurrentLevel", currentLevel);
+        PlayerPrefs.SetInt("TotalStars", totalStars);
+        PlayerPrefs.SetInt("SoundOn", isSoundOn ? 1 : 0);
+        PlayerPrefs.Save();
     }
 
     public void LoadCurrentLevel()
@@ -235,6 +233,36 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void SpawnStarAtBoardPosition(Vector3 boardPosition)
+    {
+        if (uiManager == null || uiManager.starPrefab == null || uiManager.starUITarget == null)
+        {
+            Debug.LogError("UIManager veya Star bileşenleri eksik!");
+            return;
+        }
+        GameObject star = uiManager.starPrefab;
+        star.SetActive(true);
+        star.transform.localScale = Vector3.one * 1.5f;
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(boardPosition);
+        star.transform.position = screenPos;
+        star.transform.SetParent(uiManager.starUITarget.parent, true);
+        Sequence starSequence = DOTween.Sequence();
+        starSequence.Append(star.transform.DOMove(uiManager.starUITarget.position, 0.8f).SetEase(Ease.InOutQuad));
+        starSequence.Join(star.transform.DOScale(Vector3.one, 0.8f).SetEase(Ease.InOutQuad)); // 1.5 -> 1.0 küçült
+
+        starSequence.OnComplete(() =>
+        {
+            currentStageStars++;
+            if (uiManager != null)
+            {
+                uiManager.UpdateTotalStars(totalStars + currentStageStars);
+            }
+            star.transform.localScale = Vector3.one * 1.5f;
+            star.SetActive(false);
+        });
+    }
+
+
     public void PauseGame()
     {
         isTimerRunning = false;
@@ -250,6 +278,7 @@ public class GameManager : MonoBehaviour
         levelTimer = initialLevelTimer;
         isRestarting = true;
         currentStageStars = 0;
+        currentStage = 1;
         LevelLoader.completedBoardsAmount = 0;
         LoadCurrentLevel();
     }

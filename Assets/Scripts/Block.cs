@@ -60,9 +60,6 @@ public void Initialize(BlockData data, GridManager gridManager, Material colorMa
     blockColor = data.color;
     isFixed = data.isFixed;
     blockCornerType = (BlockCornerType)data.cornerTypeValue;
-    
-    Debug.Log($"Initialize: Block {blockId}, Color: {blockColor}, isFixed: {isFixed}, CornerType: {blockCornerType}");
-
     foreach (BlockPartPosition partPos in data.parts)
     {
         GridCell cell = gridManager.GetCell(partPos.gridX, partPos.gridY);
@@ -360,7 +357,7 @@ public void HighlightGridCells(bool highlighted)
         return;
     }
 
-    float searchRadius = blockParts.Count <= 6 ? 1.5f : 1.1f;
+    float searchRadius = blockParts.Count <= 6 ? 1.1f : 1.1f;
 
     GridManager nearestGridManager = FindNearestGridManager();
     if (nearestGridManager == null)
