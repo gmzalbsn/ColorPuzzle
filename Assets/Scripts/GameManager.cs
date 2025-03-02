@@ -195,6 +195,7 @@ public class GameManager : MonoBehaviour
     {
         int totalStages = GetTotalStagesForLevel(currentLevel);
         currentStageStars = LevelLoader.completedBoardsAmount;
+
         if (currentStage < totalStages)
         {
             isTimerRunning = false;
@@ -210,12 +211,22 @@ public class GameManager : MonoBehaviour
             {
                 totalStars += currentStageStars;
                 uiManager.UpdateTotalStars(totalStars);
-                uiManager.ShowLevelCompletePanel();
+
+                // Tüm leveller tamamlandı mı kontrol et
+                if (currentLevel >= levelStages.Count) // Eğer tüm seviyeler bittiyse
+                {
+                    uiManager.ShowAllLevelsCompletePanel();
+                }
+                else
+                {
+                    uiManager.ShowLevelCompletePanel();
+                }
             }
 
             SaveData();
         }
     }
+
 
     private IEnumerator ResumeTimerAfterDelay(float delay)
     {

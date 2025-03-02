@@ -1,0 +1,5 @@
+C:/Users/gmzal/Documents/GitHub/ColorPuzzle/.utmp/RelWithDebInfo/6m3w2u63/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/gmzal/Documents/GitHub/ColorPuzzle/.utmp/RelWithDebInfo/6m3w2u63/arm64-v8a/CMakeFiles/rebuild_cache.dir
+C:/Users/gmzal/Documents/GitHub/ColorPuzzle/.utmp/RelWithDebInfo/6m3w2u63/arm64-v8a/GameActivity/CMakeFiles/game.dir
+C:/Users/gmzal/Documents/GitHub/ColorPuzzle/.utmp/RelWithDebInfo/6m3w2u63/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+C:/Users/gmzal/Documents/GitHub/ColorPuzzle/.utmp/RelWithDebInfo/6m3w2u63/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir

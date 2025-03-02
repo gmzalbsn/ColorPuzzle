@@ -17,6 +17,7 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private GameObject failPanel;
     [SerializeField] private GameObject levelCompletePanel;
+    [SerializeField] private GameObject allLevelsCompletePanel;
 
     [Header("UI Elements - Buttons")] [SerializeField]
     private Button pauseButton;
@@ -26,6 +27,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Button tryAgainButton;
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button resetDataButton;
+    [SerializeField] private Button playAgainButton;
 
     [Header("Sound Buttons")] [SerializeField]
     private GameObject soundOnImage;
@@ -34,8 +36,8 @@ public class UIManager : MonoBehaviour
 
     [Header("Stage Progress")] [SerializeField]
     private GameObject stageProgressContainer;
-
     [SerializeField] private Image stageProgressFill;
+    
     [Header("Star Animation")] 
     [SerializeField] public RectTransform starUITarget;
     [SerializeField] public GameObject starPrefab;
@@ -98,6 +100,12 @@ public class UIManager : MonoBehaviour
             gameManager.LoadNextLevel();
             HideAllPanels();
         });
+        playAgainButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlayUIButtonSound();
+            gameManager.ResetAllData();
+            HideAllPanels();
+        });
 
         if (soundOnImage != null && soundOffImage != null)
         {
@@ -142,7 +150,13 @@ public class UIManager : MonoBehaviour
             UpdateStageProgress(progress, hasMultipleStages);
         }
     }
-
+    public void ShowAllLevelsCompletePanel()
+    {
+        if (allLevelsCompletePanel != null)
+        {
+            allLevelsCompletePanel.SetActive(true);
+        }
+    }
     public void UpdateStageProgress(float progress, bool hasMultipleStages)
     {
         if (stageProgressContainer != null)
@@ -232,5 +246,6 @@ public class UIManager : MonoBehaviour
         pausePanel.SetActive(false);
         failPanel.SetActive(false);
         levelCompletePanel.SetActive(false);
+        allLevelsCompletePanel.SetActive(false);
     }
 }

@@ -1,0 +1,10 @@
+# ninja log v5
+1	3983	7626501842192514	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	8f41a9cbd8328e3a
+33	4021	7626501842500322	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	be67b908e875de1a
+49	4062	7626501843049011	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	f8ae2fd46a379440
+20	4146	7626501843764172	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	8e81e1fd8d728074
+41	4235	7626501844799325	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	a5d60443ca795845
+7	4345	7626501845897240	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	efa53bc22359f84b
+27	4635	7626501848862651	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	2430e1f41958eeb8
+14	4811	7626501850609509	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	a408e11c645d4db6
+4812	4996	7626501852492446	C:/Users/gmzal/Documents/GitHub/ColorPuzzle/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/6m3w2u63/obj/arm64-v8a/libgame.so	ae026f5f2b1d416a
