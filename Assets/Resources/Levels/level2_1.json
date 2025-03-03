@@ -1,7 +1,5 @@
 {
   "levelId": 2,
-  "hasMultipleStages": true,
-  "currentStage": 1,
   "totalStages": 2,
   "timeLimit": 100,
   "requiredCompletedBoards": 2,

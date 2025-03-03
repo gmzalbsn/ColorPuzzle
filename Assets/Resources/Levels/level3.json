@@ -1,6 +1,4 @@
 {
-  "hasMultipleStages": false,
-  "currentStage": 1,
   "totalStages": 1,
   "timeLimit": 120,
   "requiredCompletedBoards": 2,

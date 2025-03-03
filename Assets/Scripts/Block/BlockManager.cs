@@ -3,27 +3,26 @@ using System.Collections.Generic;
 
 public class BlockManager : MonoBehaviour
 {
+    #region Serialized Fields
     [SerializeField] private GameObject blockPrefab;
     [SerializeField] private Transform blocksParent;
     [SerializeField] private Material[] colorMaterials;
+    #endregion
 
+    #region Private Fields
     private Dictionary<string, Block> blocks = new Dictionary<string, Block>();
+    #endregion
 
-     public void CreateBlocksForBoard(GridManager gridManager, BoardData boardData)
+    #region Public Methods
+    public void CreateBlocksForBoard(GridManager gridManager, BoardData boardData)
     {
-        if (gridManager == null)
+        if (!ValidateInputs(gridManager, boardData))
         {
             return;
         }
         
-        if (boardData == null || boardData.blocks == null)
-        {
-            return;
-        }
+        Transform boardBlocksParent = CreateBoardParent(gridManager, boardData);
         
-        Transform boardBlocksParent = new GameObject($"Blocks_{boardData.id}").transform;
-        boardBlocksParent.SetParent(gridManager.transform);
-
         foreach (BlockData blockData in boardData.blocks)
         {
             Material colorMaterial = FindColorMaterial(blockData.color);
@@ -33,7 +32,33 @@ public class BlockManager : MonoBehaviour
             }
         }
     }
+    #endregion
 
+    #region Private Methods
+    private bool ValidateInputs(GridManager gridManager, BoardData boardData)
+    {
+        if (gridManager == null)
+        {
+            Debug.LogWarning("GridManager is null");
+            return false;
+        }
+        
+        if (boardData == null || boardData.blocks == null)
+        {
+            Debug.LogWarning("BoardData or boardData.blocks is null");
+            return false;
+        }
+
+        return true;
+    }
+
+    private Transform CreateBoardParent(GridManager gridManager, BoardData boardData)
+    {
+        Transform boardBlocksParent = new GameObject($"Blocks_{boardData.id}").transform;
+        boardBlocksParent.SetParent(gridManager.transform);
+        return boardBlocksParent;
+    }
+    
     private void CreateBlock(BlockData blockData, GridManager gridManager, Material colorMaterial, Transform parent)
     {
         if (blockPrefab == null)
@@ -49,6 +74,7 @@ public class BlockManager : MonoBehaviour
         {
             block = blockObj.AddComponent<Block>();
         }
+        
         block.Initialize(blockData, gridManager, colorMaterial);
         
         string uniqueKey = $"{parent.name}_{blockData.id}";
@@ -73,4 +99,5 @@ public class BlockManager : MonoBehaviour
         }
         return null;
     }
+    #endregion
 }

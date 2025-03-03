@@ -545,9 +545,11 @@ MonoBehaviour:
   verticalBoardSpacing: 4
   mainCamera: {fileID: 330585545}
   blockManager: {fileID: 321266888}
+  stageTransitionDelay: 1
+  stageTransitionDuration: 0.5
+  stageTransitionEase: 15
+  cameraAdjustDelay: 0.2
   currentLevelData:
-    hasMultipleStages: 0
-    currentStage: 1
     totalStages: 1
     timeLimit: 0
     requiredCompletedBoards: 0
@@ -558,10 +560,6 @@ MonoBehaviour:
     cameraYOffset: 0
     boards: []
   levelNumber: 1
-  stageTransitionDelay: 1
-  stageTransitionDuration: 0.5
-  stageTransitionEase: 15
-  cameraAdjustDelay: 0.2
 --- !u!4 &187379898
 Transform:
   m_ObjectHideFlags: 0
@@ -1645,7 +1643,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88d6d50ea94d1aa419c013ad1de22ba6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isRestarting: 0
+  levelLoader: {fileID: 187379897}
+  uiManager: {fileID: 1514079243}
 --- !u!4 &626501933
 Transform:
   m_ObjectHideFlags: 0
@@ -2435,7 +2434,6 @@ MonoBehaviour:
     m_Bits: 64
   blockManager: {fileID: 321266888}
   dragZOffset: -1
-  returnDuration: 0.2
   useSnapEffect: 1
   highlightSearchRadius: 2
 --- !u!4 &928592813
@@ -3907,7 +3905,6 @@ MonoBehaviour:
   uiButtonSound: {fileID: 8300000, guid: 3a37ccdaad076cd4bbbd34657781f994, type: 3}
   sfxSource: {fileID: 1509736446}
   musicSource: {fileID: 1509736449}
-  uiManager: {fileID: 1514079243}
 --- !u!4 &1509736448
 Transform:
   m_ObjectHideFlags: 0

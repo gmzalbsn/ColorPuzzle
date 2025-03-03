@@ -1,11 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 [System.Serializable]
 public class GridManager : MonoBehaviour
 {
+    #region Serialized Fields
     [SerializeField] private GameObject gridCellPrefab;
+    
     [Header("Half Cell Prefabs")]
     [SerializeField] private GameObject topRightPrefab;
     [SerializeField] private GameObject topLeftPrefab;
@@ -13,14 +14,23 @@ public class GridManager : MonoBehaviour
     [SerializeField] private GameObject bottomLeftPrefab;
     
     [SerializeField] private float cellSpacing = 1.1f;
-    private Dictionary<Vector2Int, GridCell> gridCells = new Dictionary<Vector2Int, GridCell>();
-
     [SerializeField] private string boardId;
+    [SerializeField] private GameObject completionEffectPrefab;
+    #endregion
+    
+    #region Private Fields
+    private Dictionary<Vector2Int, GridCell> gridCells = new Dictionary<Vector2Int, GridCell>();
     private int totalCellCount;
     private Dictionary<string, int> blockPartsByColor = new Dictionary<string, int>();
     private Dictionary<string, int> occupiedCellsByColor = new Dictionary<string, int>();
     private bool isCompleted = false;
+    #endregion
+    
+    #region Public Properties
+    public string BoardId => boardId;
+    #endregion
 
+    #region Public Methods
     public string GetBoardId()
     {
         return boardId;
@@ -40,8 +50,6 @@ public class GridManager : MonoBehaviour
     {
         return isCompleted;
     }
-
-    [SerializeField] private GameObject completionEffectPrefab;
 
     public Dictionary<Vector2Int, GridCell> GetAllCells()
     {
@@ -90,47 +98,6 @@ public class GridManager : MonoBehaviour
         totalCellCount = gridCells.Count;
     }
 
-    private void CreateCell(int col, int row, CellType cellType = CellType.Full)
-    {
-        Vector3 position = new Vector3(col * cellSpacing, 0, row * cellSpacing);
-        GameObject prefabToUse = GetCellPrefab(cellType);
-        GameObject cellObj = Instantiate(prefabToUse, position, Quaternion.identity, transform);
-        cellObj.name = $"GridCell_{row}_{col}_{cellType}";
-        GridCell cell = cellObj.GetComponent<GridCell>();
-        if (cell == null)
-            cell = cellObj.AddComponent<GridCell>();
-        cell.Initialize(new Vector2Int(col, row), cellType);
-        gridCells.Add(new Vector2Int(col, row), cell);
-    }
-    private GameObject GetCellPrefab(CellType cellType)
-    {
-        switch (cellType)
-        {
-            case CellType.Full:
-                return gridCellPrefab;
-            case CellType.TopRight:
-                return topRightPrefab != null ? topRightPrefab : gridCellPrefab;
-            case CellType.TopLeft:
-                return topLeftPrefab != null ? topLeftPrefab : gridCellPrefab;
-            case CellType.BottomRight:
-                return bottomRightPrefab != null ? bottomRightPrefab : gridCellPrefab;
-            case CellType.BottomLeft:
-                return bottomLeftPrefab != null ? bottomLeftPrefab : gridCellPrefab;
-            default:
-                return gridCellPrefab;
-        }
-    }
-
-    private void ClearGrid()
-    {
-        foreach (Transform child in transform)
-        {
-            Destroy(child.gameObject);
-        }
-
-        gridCells.Clear();
-    }
-
     public GridCell GetCell(int x, int y)
     {
         Vector2Int key = new Vector2Int(x, y);
@@ -162,6 +129,9 @@ public class GridManager : MonoBehaviour
 
     public void UpdateOccupiedCell(string color, Vector2Int cellPosition, bool isOccupied)
     {
+        if (string.IsNullOrEmpty(color))
+            return;
+            
         if (!occupiedCellsByColor.ContainsKey(color))
         {
             occupiedCellsByColor[color] = 0;
@@ -181,6 +151,110 @@ public class GridManager : MonoBehaviour
         CheckBoardCompletion();
     }
 
+    public void PrintBoardStatus()
+    {
+        int totalPartCount = 0;
+
+        if (blockPartsByColor.Count == 0)
+        {
+            Debug.Log($"Board {boardId}: No blocks placed");
+        }
+        else
+        {
+            foreach (var entry in blockPartsByColor)
+            {
+                string color = entry.Key;
+                int partCount = entry.Value;
+                totalPartCount += partCount;
+            }
+        }
+    }
+
+    public void FixAllBlocksOnBoard()
+    {
+        HashSet<Block> uniqueBlocks = GetAllBlocksOnBoard();
+
+        foreach (Block block in uniqueBlocks)
+        {
+            if (!block.IsFixed())
+            {
+                block.SetFixed(true);
+            }
+        }
+    }
+
+    public void ResetAllCells()
+    {
+        HashSet<Block> uniqueBlocks = GetAllBlocksOnBoard();
+
+        foreach (var cellEntry in gridCells)
+        {
+            GridCell cell = cellEntry.Value;
+
+            if (cell.isOccupied && !string.IsNullOrEmpty(cell.occupiedByColor) && cell.occupiedByBlock != null)
+            {
+                cell.SetOccupied(false, "", null);
+            }
+
+            cell.SetHighlighted(false);
+        }
+
+        foreach (Block block in uniqueBlocks)
+        {
+            Vector3 originalPos = block.originalPosition;
+            block.UpdateOccupiedCells();
+            block.originalPosition = originalPos;
+        }
+
+        RecalculateBlocksAndCells();
+    }
+    #endregion
+    
+    #region Private Methods
+    private void CreateCell(int col, int row, CellType cellType = CellType.Full)
+    {
+        Vector3 position = new Vector3(col * cellSpacing, 0, row * cellSpacing);
+        GameObject prefabToUse = GetCellPrefab(cellType);
+        GameObject cellObj = Instantiate(prefabToUse, position, Quaternion.identity, transform);
+        cellObj.name = $"GridCell_{row}_{col}_{cellType}";
+        
+        GridCell cell = cellObj.GetComponent<GridCell>();
+        if (cell == null)
+            cell = cellObj.AddComponent<GridCell>();
+            
+        cell.Initialize(new Vector2Int(col, row), cellType);
+        gridCells.Add(new Vector2Int(col, row), cell);
+    }
+    
+    private GameObject GetCellPrefab(CellType cellType)
+    {
+        switch (cellType)
+        {
+            case CellType.Full:
+                return gridCellPrefab;
+            case CellType.TopRight:
+                return topRightPrefab != null ? topRightPrefab : gridCellPrefab;
+            case CellType.TopLeft:
+                return topLeftPrefab != null ? topLeftPrefab : gridCellPrefab;
+            case CellType.BottomRight:
+                return bottomRightPrefab != null ? bottomRightPrefab : gridCellPrefab;
+            case CellType.BottomLeft:
+                return bottomLeftPrefab != null ? bottomLeftPrefab : gridCellPrefab;
+            default:
+                return gridCellPrefab;
+        }
+    }
+
+    private void ClearGrid()
+    {
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        gridCells.Clear();
+    }
+
     private void CheckBoardCompletion()
     {
         if (totalCellCount == 0)
@@ -195,40 +269,53 @@ public class GridManager : MonoBehaviour
             totalPartCount += entry.Value;
         }
 
+        bool shouldBeCompleted = false;
+        
         if (totalPartCount == totalCellCount)
         {
             if (blockPartsByColor.Count == 1)
             {
-                if (!isCompleted)
-                {
-                    isCompleted = true;
-                    LevelLoader.completedBoardsAmount += 1;
-                    SpawnCompletionEffect();
-                    AudioManager.Instance.PlayBlockCompletedSound();
-
-                    if (GameManager.Instance != null)
-                    {
-                        GameManager.Instance.OnBoardCompleted();
-                    }
-
-                    FixAllBlocksOnBoard();
-                }
-
-                return;
+                shouldBeCompleted = true;
             }
         }
-
-        if (isCompleted)
+        if (shouldBeCompleted != isCompleted)
         {
-            isCompleted = false;
-            LevelLoader.completedBoardsAmount -= 1;
-            if (LevelLoader.completedBoardsAmount < 0)
-                LevelLoader.completedBoardsAmount = 0;
-
-            if (GameManager.Instance != null)
+            isCompleted = shouldBeCompleted;
+            
+            if (isCompleted)
             {
-                GameManager.Instance.OnBoardCompleted();
+                OnBoardCompleted();
             }
+            else
+            {
+                OnBoardUncompleted();
+            }
+        }
+    }
+    
+    private void OnBoardCompleted()
+    {
+        LevelLoader.completedBoardsAmount += 1;
+        SpawnCompletionEffect();
+        AudioManager.Instance.PlayBlockCompletedSound();
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnBoardCompleted();
+        }
+
+        FixAllBlocksOnBoard();
+    }
+    
+    private void OnBoardUncompleted()
+    {
+        LevelLoader.completedBoardsAmount -= 1;
+        if (LevelLoader.completedBoardsAmount < 0)
+            LevelLoader.completedBoardsAmount = 0;
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnBoardCompleted();
         }
     }
 
@@ -241,20 +328,18 @@ public class GridManager : MonoBehaviour
 
             GameObject effectInstance = Instantiate(completionEffectPrefab, effectPosition, Quaternion.identity);
             Destroy(effectInstance, 3f);
-    
-            // GameManager'dan yıldız verme işlemini çağır
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.SpawnStarAtBoardPosition(effectPosition);
+                GameManager.Instance.GetStarMove(effectPosition);
             }
         }
     }
-
 
     private Vector3 CalculateBoardCenter()
     {
         if (gridCells.Count == 0)
             return transform.position;
+            
         Vector3 min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
         Vector3 max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
 
@@ -279,82 +364,26 @@ public class GridManager : MonoBehaviour
         return center;
     }
 
-    public void PrintBoardStatus()
-    {
-        int totalPartCount = 0;
-
-        if (blockPartsByColor.Count == 0)
-        {
-        }
-        else
-        {
-            foreach (var entry in blockPartsByColor)
-            {
-                string color = entry.Key;
-                int partCount = entry.Value;
-                totalPartCount += partCount;
-            }
-        }
-    }
-
-    public void FixAllBlocksOnBoard()
+    private HashSet<Block> GetAllBlocksOnBoard()
     {
         HashSet<Block> uniqueBlocks = new HashSet<Block>();
+        
         foreach (var cellEntry in gridCells)
         {
             GridCell cell = cellEntry.Value;
-            if (cell.isOccupied)
-            {
-                Block block = cell.occupiedByBlock;
-                if (block != null && !uniqueBlocks.Contains(block))
-                {
-                    uniqueBlocks.Add(block);
-                }
-            }
-        }
-
-        foreach (Block block in uniqueBlocks)
-        {
-            if (!block.IsFixed())
-            {
-                block.SetFixed(true);
-            }
-        }
-    }
-
-    public void ResetAllCells()
-    {
-        HashSet<Block> uniqueBlocks = new HashSet<Block>();
-
-        foreach (var cellEntry in gridCells)
-        {
-            GridCell cell = cellEntry.Value;
-
-            if (cell.isOccupied && !string.IsNullOrEmpty(cell.occupiedByColor) && cell.occupiedByBlock != null)
+            if (cell.isOccupied && cell.occupiedByBlock != null)
             {
                 uniqueBlocks.Add(cell.occupiedByBlock);
-
-                cell.SetOccupied(false, "", null);
             }
-
-            cell.SetHighlighted(false);
         }
-
-        foreach (Block block in uniqueBlocks)
-        {
-            Vector3 originalPos = block.originalPosition;
-            block.UpdateOccupiedCells();
-            block.originalPosition = originalPos;
-        }
-
-        RecalculateBlocksAndCells();
+        
+        return uniqueBlocks;
     }
 
     private void RecalculateBlocksAndCells()
     {
         blockPartsByColor.Clear();
         occupiedCellsByColor.Clear();
-
         foreach (var cellEntry in gridCells)
         {
             GridCell cell = cellEntry.Value;
@@ -368,17 +397,8 @@ public class GridManager : MonoBehaviour
                 occupiedCellsByColor[cell.occupiedByColor]++;
             }
         }
-
-        HashSet<Block> uniqueBlocks = new HashSet<Block>();
-        foreach (var cellEntry in gridCells)
-        {
-            GridCell cell = cellEntry.Value;
-            if (cell.isOccupied && cell.occupiedByBlock != null)
-            {
-                uniqueBlocks.Add(cell.occupiedByBlock);
-            }
-        }
-
+        HashSet<Block> uniqueBlocks = GetAllBlocksOnBoard();
+        
         foreach (Block block in uniqueBlocks)
         {
             string blockColor = block.GetColor();
@@ -394,4 +414,5 @@ public class GridManager : MonoBehaviour
 
         CheckBoardCompletion();
     }
+    #endregion
 }

@@ -12,149 +12,144 @@ public enum BlockCornerType
     BottomLeft = 4
 }
 
-public class Block : MonoBehaviour
+public class Block : MonoBehaviour, IDraggable
 {
+    #region Serialized Fields
     [SerializeField] private GameObject blockPartPrefab;
     [SerializeField] private GameObject fixedBlockPartPrefab;
 
-    [Header("Corner Block Prefabs")] [SerializeField]
-    private GameObject topRightBlockPrefab;
-
+    [Header("Corner Block Prefabs")] 
+    [SerializeField] private GameObject topRightBlockPrefab;
     [SerializeField] private GameObject topLeftBlockPrefab;
     [SerializeField] private GameObject bottomRightBlockPrefab;
     [SerializeField] private GameObject bottomLeftBlockPrefab;
-
-    private string blockId;
-    private string blockColor;
-    public bool isFixed;
-    private List<GameObject> blockParts = new List<GameObject>();
-    private List<Vector2Int> gridPositions = new List<Vector2Int>();
-    private Vector3 dragOffset;
-    public Vector3 originalPosition;
-    private bool isDragging = false;
-    private bool isMoving = false;
-
-    public float orginalZOffset = 0.005f;
-
-    private List<GridCell> occupiedCells = new List<GridCell>();
-    private Sequence currentTweenSequence;
+    
     [SerializeField] private float snapDuration = 0.3f;
     [SerializeField] private float returnDuration = 0.25f;
     [SerializeField] private float highlightRadius = 0.4f;
-
+    #endregion
+    
+    #region Private Fields
+    private string blockColor;
     private BlockCornerType blockCornerType;
+    private List<GameObject> blockParts = new List<GameObject>();
+    private List<IBlockPart> blockPartComponents = new List<IBlockPart>();
+    private List<Vector2Int> gridPositions = new List<Vector2Int>();
+    private Vector3 dragOffset;
+    private bool isDragging = false;
+    private bool isMoving = false;
+    
+    private List<GridCell> occupiedCells = new List<GridCell>();
+    private List<GridCell> highlightedCells = new List<GridCell>();
+    private Sequence currentTweenSequence;
+    #endregion
+    
+    #region Public Properties
+    public bool isFixed;
+    public Vector3 originalPosition;
+    public float orginalZOffset = 0.005f;
+    #endregion
 
+    #region Lifecycle Methods
     private void Start()
     {
         UpdateOriginalPosition();
     }
 
+    private void OnDestroy()
+    {
+        DOTween.Kill(transform);
+        ClearOccupiedCells();
+    }
+    #endregion
+
+    #region Initialization
     public void UpdateOriginalPosition()
     {
         originalPosition = transform.position;
     }
 
-public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
-{
-    blockId = data.id;
-    blockColor = data.color;
-    isFixed = data.isFixed;
-    blockCornerType = (BlockCornerType)data.cornerTypeValue;
-    foreach (BlockPartPosition partPos in data.parts)
+    public void Initialize(BlockData data, GridManager gridManager, Material colorMaterial)
     {
-        GridCell cell = gridManager.GetCell(partPos.gridX, partPos.gridY);
-        if (cell == null) continue;
-        gridPositions.Add(new Vector2Int(partPos.gridX, partPos.gridY));
-        GameObject prefabToUse;
-
-        if (blockCornerType == BlockCornerType.Full)
+        blockColor = data.color;
+        isFixed = data.isFixed;
+        blockCornerType = (BlockCornerType)data.cornerTypeValue;
+        
+        foreach (BlockPartPosition partPos in data.parts)
         {
-            prefabToUse = isFixed ? fixedBlockPartPrefab : blockPartPrefab;
-        }
-        else
-        {
-            prefabToUse = GetPrefabForCornerType(blockCornerType);
-        }
-        GameObject part = Instantiate(prefabToUse, cell.GetWorldPosition(), Quaternion.identity, transform);
-        part.name = $"Part_{partPos.gridX}_{partPos.gridY}_{blockCornerType}";
-        BlockPart blockPart = part.GetComponent<BlockPart>();
-        if (blockPart != null && blockPart.meshRenderer != null && colorMaterial != null)
-        {
-            blockPart.meshRenderer.material = colorMaterial;
-            if (isFixed)
+            GridCell cell = gridManager.GetCell(partPos.gridX, partPos.gridY);
+            if (cell == null) continue;
+            
+            gridPositions.Add(new Vector2Int(partPos.gridX, partPos.gridY));
+            GameObject prefabToUse = GetPrefabForCornerType(blockCornerType, isFixed);
+            
+            GameObject part = Instantiate(prefabToUse, cell.GetWorldPosition(), Quaternion.identity, transform);
+            part.name = $"Part_{partPos.gridX}_{partPos.gridY}_{blockCornerType}";
+            
+            IBlockPart blockPart = part.GetComponent<IBlockPart>();
+            if (blockPart != null)
             {
-                Color color = blockPart.meshRenderer.material.color;
-                color.a = 0.7f;  
-                blockPart.meshRenderer.material.color = color;
+                blockPartComponents.Add(blockPart);
+                blockPart.SetMaterial(colorMaterial, isFixed);
             }
+
+            blockParts.Add(part);
+            part.transform.rotation = Quaternion.Euler(-90, 0, 0);
         }
-        else
+
+        RecalculatePosition();
+        Vector3 pos = transform.position;
+        pos.z -= orginalZOffset;
+        transform.position = pos;
+        
+        gridManager.RegisterBlockParts(blockColor, blockParts.Count);
+        
+        if (isFixed)
         {
-            MeshRenderer renderer = part.GetComponentInChildren<MeshRenderer>();
-            if (renderer != null && colorMaterial != null)
-            {
-                renderer.material = colorMaterial;
-                if (isFixed)
-                {
-                    Color color = renderer.material.color;
-                    color.a = 0.7f;  
-                    renderer.material.color = color;
+            UpdateOccupiedCells();
+        }
+
+        Invoke("UpdateOriginalPosition", 0.1f);
+    }
+
+    private GameObject GetPrefabForCornerType(BlockCornerType cornerType, bool isFixed)
+    {
+        if (isFixed && fixedBlockPartPrefab != null && cornerType == BlockCornerType.Full)
+        {
+            return fixedBlockPartPrefab;
+        }
+        if (cornerType == BlockCornerType.Full)
+        {
+            return blockPartPrefab;
+        }
+        switch (cornerType)
+        {
+            case BlockCornerType.TopRight:
+                if (topRightBlockPrefab != null) {
+                    return topRightBlockPrefab;
                 }
-            }
+                break;
+                
+            case BlockCornerType.TopLeft:
+                if (topLeftBlockPrefab != null) {
+                    return topLeftBlockPrefab;
+                }
+                break;
+                
+            case BlockCornerType.BottomRight:
+                if (bottomRightBlockPrefab != null) {
+                    return bottomRightBlockPrefab;
+                }
+                break;
+                
+            case BlockCornerType.BottomLeft:
+                if (bottomLeftBlockPrefab != null) {
+                    return bottomLeftBlockPrefab;
+                }
+                break;
         }
-
-        blockParts.Add(part);
-        part.transform.rotation = Quaternion.Euler(-90, 0, 0);
+        return blockPartPrefab;
     }
-
-    RecalculatePosition();
-    Vector3 pos = transform.position;
-    pos.z -= orginalZOffset;
-    transform.position = pos;
-    gridManager.RegisterBlockParts(blockColor, blockParts.Count);
-    if (isFixed)
-    {
-        UpdateOccupiedCells();
-    }
-
-    Invoke("UpdateOriginalPosition", 0.1f);
-}
-private GameObject GetPrefabForCornerType(BlockCornerType cornerType)
-{
-    
-    switch (cornerType)
-    {
-        case BlockCornerType.TopRight:
-            if (topRightBlockPrefab != null) {
-                return topRightBlockPrefab;
-            }
-            break;
-            
-        case BlockCornerType.TopLeft:
-            if (topLeftBlockPrefab != null) {
-                return topLeftBlockPrefab;
-            }
-            break;
-            
-        case BlockCornerType.BottomRight:
-            if (bottomRightBlockPrefab != null) {
-                return bottomRightBlockPrefab;
-            }
-            break;
-            
-        case BlockCornerType.BottomLeft:
-            if (bottomLeftBlockPrefab != null) {
-                return bottomLeftBlockPrefab;
-            }
-            break;
-    }
-    return blockPartPrefab;
-}
-public BlockCornerType GetCornerType()
-{
-    return blockCornerType;
-}
-
 
     private void RecalculatePosition()
     {
@@ -175,6 +170,13 @@ public BlockCornerType GetCornerType()
             part.transform.parent = transform;
         }
     }
+    #endregion
+
+    #region Public Methods
+    public BlockCornerType GetCornerType()
+    {
+        return blockCornerType;
+    }
 
     public string GetColor()
     {
@@ -191,21 +193,75 @@ public BlockCornerType GetCornerType()
         return isMoving;
     }
 
+    public int GetBlockPartCount()
+    {
+        return blockParts.Count;
+    }
+
     public void SetFixed(bool fixState)
     {
         isFixed = fixState;
-        foreach (GameObject part in blockParts)
+        foreach (BlockPart blockPart in blockPartComponents)
         {
-            MeshRenderer renderer = part.GetComponent<BlockPart>()?.meshRenderer;
-            if (renderer != null)
+            Material currentMaterial = blockPart.GetComponent<BlockPart>()?.meshRenderer?.material;
+            if (currentMaterial != null)
             {
-                Color color = renderer.material.color;
-                color.a = fixState ? 0.7f : 1.0f;
-                renderer.material.color = color;
+                blockPart.SetMaterial(currentMaterial, fixState);
             }
         }
     }
+    #endregion
 
+    #region Highlighting
+    public void HighlightGridCells(bool highlighted)
+    {
+        BlockHighlighter.ClearAllHighlights(highlightedCells);
+        highlightedCells.Clear();
+
+        if (!highlighted || isFixed)
+        {
+            return;
+        }
+
+        float searchRadius = blockParts.Count <= 6 ? 1.1f : 1.1f;
+        GridManager nearestGridManager = FindNearestGridManager();
+        
+        if (nearestGridManager != null)
+        {
+            highlightedCells = BlockHighlighter.HighlightAvailableCells(
+                transform, 
+                blockParts, 
+                blockCornerType, 
+                nearestGridManager, 
+                searchRadius
+            );
+        }
+    }
+
+    private GridManager FindNearestGridManager()
+    {
+        GridManager[] gridManagers = FindObjectsOfType<GridManager>();
+        if (gridManagers.Length == 0)
+            return null;
+
+        GridManager nearest = null;
+        float minDistance = float.MaxValue;
+
+        foreach (GridManager gm in gridManagers)
+        {
+            float distance = Vector3.Distance(transform.position, gm.transform.position);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                nearest = gm;
+            }
+        }
+
+        return nearest;
+    }
+    #endregion
+    
+    #region IDraggable Implementation
     public void StartDrag()
     {
         if (isFixed) return;
@@ -222,7 +278,35 @@ public BlockCornerType GetCornerType()
 
         transform.position = position;
     }
-
+    
+    public void EndDrag(Vector3 finalPosition)
+    {
+        EndDragWithEffect(finalPosition);
+    }
+    
+    public void ReturnToOrigin(Vector3 originalPosition)
+    {
+        ReturnToOriginWithEffect(originalPosition);
+    }
+    
+    public bool IsDraggable()
+    {
+        return !isFixed;
+    }
+    
+    public bool IsCurrentlyDragging()
+    {
+        return isDragging;
+    }
+    
+    public Vector3 GetOriginalPosition()
+    {
+        return originalPosition;
+    }
+    
+    #endregion
+    
+    #region Drag Implementation Details
     public void EndDragSimple(Vector3 finalPosition)
     {
         if (!isDragging || isFixed)
@@ -339,122 +423,9 @@ public BlockCornerType GetCornerType()
 
         DOTween.Kill(transform);
     }
+    #endregion
 
-    public int GetBlockPartCount()
-    {
-        return blockParts.Count;
-    }
-public void HighlightGridCells(bool highlighted)
-{
-    GridCell[] allCellsInScene = FindObjectsOfType<GridCell>();
-    foreach (GridCell cell in allCellsInScene)
-    {
-        cell.SetHighlighted(false);
-    }
-
-    if (!highlighted || isFixed)
-    {
-        return;
-    }
-
-    float searchRadius = blockParts.Count <= 6 ? 1.1f : 1.1f;
-
-    GridManager nearestGridManager = FindNearestGridManager();
-    if (nearestGridManager == null)
-    {
-        return;
-    }
-
-    Dictionary<Vector2Int, GridCell> validCells = nearestGridManager.GetAllCells();
-    if (validCells.Count == 0)
-    {
-        return;
-    }
-
-    List<GridCell> cellsToHighlight = new List<GridCell>();
-
-    foreach (GameObject part in blockParts)
-    {
-        if (part == null) continue;
-
-        Vector3 partWorldPos = transform.position + part.transform.localPosition;
-        GridCell bestCell = null;
-        float bestDistance = float.MaxValue;
-
-        foreach (var entry in validCells)
-        {
-            GridCell cell = entry.Value;
-            if (cell != null && !cellsToHighlight.Contains(cell))
-            {
-                if (blockCornerType != BlockCornerType.Full)
-                {
-                    bool typeMatches = (cell.GetCellType() == CellType.Full) || 
-                                       (BlockCornerTypeMatchesCellType(blockCornerType, cell.GetCellType()));
-                    
-                    if (!typeMatches)
-                    {
-                        continue;
-                    }
-                }
-
-                float distance = Vector3.Distance(partWorldPos, cell.transform.position);
-                float effectiveRadius = (blockCornerType != BlockCornerType.Full) ? 1.2f : searchRadius;
-                if (distance < effectiveRadius && distance < bestDistance)
-                {
-                    bestDistance = distance;
-                    bestCell = cell;
-                }
-            }
-        }
-
-        if (bestCell != null && !cellsToHighlight.Contains(bestCell))
-        {
-            bestCell.SetHighlighted(true);
-            cellsToHighlight.Add(bestCell);
-        }
-    }
-}
-private bool BlockCornerTypeMatchesCellType(BlockCornerType blockType, CellType cellType)
-{
-    switch (blockType)
-    {
-        case BlockCornerType.TopRight:
-            return cellType == CellType.TopRight;
-        case BlockCornerType.TopLeft:
-            return cellType == CellType.TopLeft;
-        case BlockCornerType.BottomRight:
-            return cellType == CellType.BottomRight;
-        case BlockCornerType.BottomLeft:
-            return cellType == CellType.BottomLeft;
-        case BlockCornerType.Full:
-            return cellType == CellType.Full;
-        default:
-            return false;
-    }
-}
-
-    private GridManager FindNearestGridManager()
-    {
-        GridManager[] gridManagers = FindObjectsOfType<GridManager>();
-        if (gridManagers.Length == 0)
-            return null;
-
-        GridManager nearest = null;
-        float minDistance = float.MaxValue;
-
-        foreach (GridManager gm in gridManagers)
-        {
-            float distance = Vector3.Distance(transform.position, gm.transform.position);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearest = gm;
-            }
-        }
-
-        return nearest;
-    }
-
+    #region Cell Occupation
     public void UpdateOccupiedCells()
     {
         ClearOccupiedCells();
@@ -506,10 +477,5 @@ private bool BlockCornerTypeMatchesCellType(BlockCornerType blockType, CellType 
 
         occupiedCells.Clear();
     }
-
-    private void OnDestroy()
-    {
-        DOTween.Kill(transform);
-        ClearOccupiedCells();
-    }
+    #endregion
 }
